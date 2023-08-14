@@ -12,13 +12,13 @@ import Suite
 import SwiftUI
 import Accelerate
 
-@MainActor public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampleBufferDelegate, MicrophoneListener {
+public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampleBufferDelegate, MicrophoneListener {
 	public static let instance = Recorder()
 	
 	enum RecorderError: Error { case unableToAddOutput, unableToAddInput, noValidInputs, cantRecordOnSimulator }
 	
-	@Published public var isRunning = false
-	@Published public var recordingDuration: TimeInterval = 0
+	public var isRunning = false { didSet { objectWillChange.sendOnMain() }}
+	public var recordingDuration: TimeInterval = 0 { didSet { objectWillChange.sendOnMain() }}
 	
 	let session: AVCaptureSession = AVCaptureSession()
 	let queue = DispatchQueue(label: "\(Recorder.self)", qos: .userInitiated, attributes: [], autoreleaseFrequency: .inherit, target: nil)
@@ -63,16 +63,14 @@ import Accelerate
 			session.addInput(audioIn)
 		}
 
-		isRunning = true
-
 		audioConnection = audioOutput.connection(with: .audio)
-		Task.detached {
-			self.session.startRunning()
-			try await Microphone.instance.setActive(self)
-		}
+		self.session.startRunning()
+		try await Microphone.instance.setActive(self)
+		isRunning = true
+		print("Now running")
 	}
 	
-	public func stop() async throws {
+	@MainActor public func stop() async throws {
 		Microphone.instance.clearActive(self)
 		if !isRunning { return }
 		
@@ -95,10 +93,11 @@ extension CMSampleBuffer: @unchecked Sendable { }
 
 extension Recorder {
 	nonisolated public func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+		print("got data: \(sampleBuffer)")
 		Task { await capture(output, didOutput: sampleBuffer, from: connection) }
 	}
 	
-	func capture(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+	@MainActor func capture(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
 		guard isRunning, let output = self.output else { return }
 		output.handle(buffer: sampleBuffer)
 		let threshold = 44100 / 30
