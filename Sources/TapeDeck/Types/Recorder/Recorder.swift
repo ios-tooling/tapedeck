@@ -26,11 +26,20 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	let audioOutput = AVCaptureAudioDataOutput()
 	var outputType = AudioFileType.wav
 	var output: RecorderOutput?
+	public var startedAt: Date?
 	public let levelsSummary = LevelsSummary()
 
+	public var duration: TimeInterval? {
+		guard let startedAt else { return nil }
+		return Date().timeIntervalSince(startedAt)
+	}
+	
 	func start() async throws -> Bool {
+		if isRunning { return false }
+		
 		do {
 			try await startRecording()
+			startedAt = Date()
 			return true
 		} catch {
 			logg(error: error, "Problem starting to listen")
@@ -93,7 +102,7 @@ extension CMSampleBuffer: @unchecked Sendable { }
 
 extension Recorder {
 	nonisolated public func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-		print("got data: \(sampleBuffer)")
+		//print("got data: \(sampleBuffer)")
 		Task { await capture(output, didOutput: sampleBuffer, from: connection) }
 	}
 	
