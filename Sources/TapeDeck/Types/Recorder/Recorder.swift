@@ -109,7 +109,6 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		Microphone.instance.clearActive(self)
 		if state == .idle { return }
 		
-		state = .idle
 		do {
 			_ = try await output?.endRecording()
 			session.stopRunning()
@@ -117,6 +116,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 			session.stopRunning()
 			throw error
 		}
+		state = .idle
 	}
 	
 	var currentAverage: Float = 0.0

@@ -24,7 +24,7 @@ extension Recorder {
 				print("Recording Interrruption began")
 				isPausedDueToInterruption = true
 				interruptCount += 1
-				Task { try? await self.pause() }
+				Task { try? await self.stop() }
 				
 			case .ended:
 				if self.interruptCount == 0 { return }
@@ -34,7 +34,7 @@ extension Recorder {
 					self.interruptCount -= 1
 					if self.interruptCount != 0 || !self.isPausedDueToInterruption { return }
 					self.isPausedDueToInterruption = false
-					self.resume()
+//					Task { try? await self.start() }
 				}
 				
 			@unknown default:

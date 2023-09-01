@@ -19,6 +19,7 @@ public class RecordingStore: ObservableObject {
 
 	public var mainRecordingDirectory = FileManager.documentsDirectory { didSet { self.setupCurrentRecordings() }}
 	public var extraDirectories: [URL] = []
+	var cancellables: Set<AnyCancellable> = []
 	
 	public var fileExtensions = [Recorder.AudioFileType.m4a.fileExtension, Recorder.AudioFileType.wav.fileExtension, Recorder.AudioFileType.mp3.fileExtension, RecordingPackage.fileExtension]
 	
@@ -40,6 +41,12 @@ public class RecordingStore: ObservableObject {
 	
 	init() {
 		self.updateRecordings()
+		
+		Recorder.instance.objectWillChange
+			.sink { [weak self] _ in
+				self?.objectWillChange.sendOnMain()
+			}
+			.store(in: &cancellables)
 	}
 	
 	public func delete(recording: Recording) {
