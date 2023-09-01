@@ -17,7 +17,9 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	
 	enum RecorderError: String, Error { case unableToAddOutput, unableToAddInput, noValidInputs, cantRecordOnSimulator, unableToCreateRecognitionRequest, unableToCreateRecognitionTask }
 	
-	public var isRunning = false { didSet { objectWillChange.sendOnMain() }}
+	public enum State { case idle, running, paused }
+	
+	public var state = State.idle { didSet { objectWillChange.sendOnMain() }}
 	public var recordingDuration: TimeInterval = 0 { didSet { objectWillChange.sendOnMain() }}
 	
 	let session: AVCaptureSession = AVCaptureSession()
@@ -28,18 +30,24 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	var output: RecorderOutput?
 	public var startedAt: Date?
 	public let levelsSummary = LevelsSummary()
-
+	var cancelBag: Set<AnyCancellable> = []
+	var isPausedDueToInterruption = false
+	var interruptCount = 0
+	override init() {
+		super.init()
+		setupInterruptions()
+	}
+	
 	public var duration: TimeInterval? {
 		guard let startedAt else { return nil }
 		return Date().timeIntervalSince(startedAt)
 	}
 	
 	func start() async throws -> Bool {
-		if isRunning { return false }
+		guard state == .idle else { return false }
 		
 		do {
 			try await startRecording()
-			startedAt = Date()
 			return true
 		} catch {
 			logg(error: error, "Problem starting to listen")
@@ -50,40 +58,58 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	public func startRecording(to output: RecorderOutput = OutputDevNull.instance) async throws {
 		if Gestalt.isOnSimulator { logg("CANNOT RECORD ON THE SIMULATOR"); throw RecorderError.cantRecordOnSimulator }
 
-		guard !isRunning else {
+		guard state != .running else {
 			try await Microphone.instance.setActive(self)
 			return
 		}
 		
-		self.output = output
-		try await output.prepareToRecord()
-
+		if state == .idle {
+			startedAt = Date()
+			self.output = output
+			try await output.prepareToRecord()
+		}
 		if session.outputs.isEmpty {
+			print("Adding outputs")
 			audioOutput.setSampleBufferDelegate(self, queue: queue)
 			guard session.canAddOutput(audioOutput) else { throw RecorderError.unableToAddOutput }
-
+			
 			session.addOutput(audioOutput)
 		}
 		
 		if session.inputs.isEmpty {
+			print("Adding inputs")
 			guard let audioDevice = AVCaptureDevice.default(for: .audio) else { throw RecorderError.noValidInputs}
 			let audioIn = try AVCaptureDeviceInput(device: audioDevice)
-
+			
 			session.addInput(audioIn)
 		}
 
 		audioConnection = audioOutput.connection(with: .audio)
-		self.session.startRunning()
+		session.startRunning()
 		try await Microphone.instance.setActive(self)
-		isRunning = true
+		state = .running
 		print("Now running")
+	}
+	
+	@MainActor public func pause() async throws {
+		guard state == .running else { return }
+		
+		state = .paused
+		session.stopRunning()
+	}
+	
+	@MainActor public func resume() {
+		guard state == .paused, let output else { return }
+		Task.detached {
+			try await self.startRecording(to: output)
+		}
 	}
 	
 	@MainActor public func stop() async throws {
 		Microphone.instance.clearActive(self)
-		if !isRunning { return }
+		if state == .idle { return }
 		
-		isRunning = false
+		state = .idle
 		do {
 			_ = try await output?.endRecording()
 			session.stopRunning()
@@ -96,45 +122,4 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	var currentAverage: Float = 0.0
 	var currentCount = 0
 	var max: Double = 0
-}
-
-extension CMSampleBuffer: @unchecked Sendable { }
-
-extension Recorder {
-	nonisolated public func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-		//print("got data: \(sampleBuffer)")
-		Task { await capture(output, didOutput: sampleBuffer, from: connection) }
-	}
-	
-	@MainActor func capture(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-		guard isRunning, let output = self.output else { return }
-		output.handle(buffer: sampleBuffer)
-		let threshold = 44100 / 30
-		
-		if let avg = sampleBuffer.dataBuffer?.average {
-			currentAverage += avg * Float(sampleBuffer.numSamples)
-			currentCount += sampleBuffer.numSamples
-			
-			levelsSummary.add(samples: sampleBuffer.dataBuffer?.sampleInt16s ?? [])
-			if currentCount > threshold {
-				let cumeAverage = Double(currentAverage / Float(currentCount))
-				let db = cumeAverage
-				let calibrated = db - Volume.baselineDBAdjustment
-				
-				let reported = Volume(detectedRoomVolume: connection.audioChannels.last?.averagePowerLevel.double)
-				let environmentDBAvgSPL = reported ?? Volume.dB(calibrated)
-				if environmentDBAvgSPL.db > max {
-					max = environmentDBAvgSPL.db
-				}
-				
-				Microphone.instance.history.record(volume: environmentDBAvgSPL)
-				currentAverage = 0
-				currentCount = 0
-			}
-		}
-	}
-}
-
-extension Float {
-	var double: Double { Double(self) }
 }

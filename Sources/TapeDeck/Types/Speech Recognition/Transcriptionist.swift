@@ -19,6 +19,7 @@ public class Transcriptionist: NSObject, ObservableObject {
 	private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
 	private var recognitionTask: SFSpeechRecognitionTask?
 	var textCallback: ((String) -> Void)?
+	var observationToken: Any?
 	
 	@Published public var currentTranscription = Transcription()
 
@@ -29,14 +30,27 @@ public class Transcriptionist: NSObject, ObservableObject {
 		speechRecognizer.delegate = self
 	}
 	
-	public func start(textCallback: ((String) -> Void)?) throws {
+	public func requestPermission() async -> Bool {
+		if SFSpeechRecognizer.authorizationStatus() == .authorized { return true }
+		
+		return await withCheckedContinuation { continuation in
+			SFSpeechRecognizer.requestAuthorization { status in
+				continuation.resume(returning: status == .authorized)
+			}
+		}
+	}
+	
+	public func start(textCallback: ((String) -> Void)?) async throws {
 		if isRunning { return }
+		
+		if await !requestPermission() { return }
 		inputNode = audioEngine.inputNode
 		
+		self.fullTranscript = ""
 		self.currentTranscription = Transcription()
 		recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
 		guard let recognitionRequest = recognitionRequest else { throw Recorder.RecorderError.unableToCreateRecognitionRequest }
-		recognitionRequest.shouldReportPartialResults = true
+	//	recognitionRequest.shouldReportPartialResults = true
 		recognitionRequest.requiresOnDeviceRecognition = true
 		
 		guard let recordingFormat = inputNode?.outputFormat(forBus: 0) else { return }
@@ -56,6 +70,7 @@ public class Transcriptionist: NSObject, ObservableObject {
 	}
 	
 	public func stop() {
+		print(self.fullTranscript)
 		if isRunning {
 			audioEngine.stop()
 			isRunning = false
@@ -70,25 +85,68 @@ public class Transcriptionist: NSObject, ObservableObject {
 		recognitionTask = nil
 	}
 	
+	var lastString = ""
+	var fullTranscript = ""
+	
 	func buildRecognitionTask() -> SFSpeechRecognitionTask? {
 		guard let recognitionRequest else { return nil }
 		
-		return speechRecognizer.recognitionTask(with: recognitionRequest) { result, error in
-			var isFinal = false
-			
-			if let result {
-				self.textCallback?(result.bestTranscription.formattedString)
-				// Update the text view with the results.
-				//self.textView.text = result.bestTranscription.formattedString
-				//print(result)
-				print("Recognized: \(result.bestTranscription.formattedString)")
-				isFinal = result.isFinal
+//		let task = speechRecognizer.recognitionTask(with: recognitionRequest, delegate: self)
+		let task = speechRecognizer.recognitionTask(with: recognitionRequest) { result, error in
+			if let error {
+				print("Recognition Error: \(error)")
+				return
 			}
 			
-			if error != nil || isFinal {
-				self.stop()
+			if let best = result?.bestTranscription {
+				if best.formattedString.hasPrefix(self.lastString) {
+					self.fullTranscript += best.formattedString.dropFirst(self.lastString.count) + " "
+				}
+				self.lastString = best.formattedString
 			}
 		}
+
+		return task
+//		{ result, error in
+//			var isFinal = false
+//			
+//			if let result {
+//				self.textCallback?(result.bestTranscription.formattedString)
+//				// Update the text view with the results.
+//				//self.textView.text = result.bestTranscription.formattedString
+//				//print(result)
+//				print("Recognized: \(result.bestTranscription.formattedString)")
+//				isFinal = result.isFinal
+//			}
+//			
+//			if error != nil || isFinal {
+//				self.stop()
+//			}
+//		}
+	}
+}
+
+
+extension Transcriptionist: SFSpeechRecognitionTaskDelegate {
+	public func speechRecognitionDidDetectSpeech(_ task: SFSpeechRecognitionTask) {
+		print("Detected speech")
+	}
+	
+	public func speechRecognitionTaskFinishedReadingAudio(_ task: SFSpeechRecognitionTask) {
+		print("speechRecognitionTaskFinishedReadingAudio")
+	}
+	
+	public func speechRecognitionTaskWasCancelled(_ task: SFSpeechRecognitionTask) {
+		print("speechRecognitionTaskWasCancelled")
+	}
+	
+
+	public func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishRecognition result: SFSpeechRecognitionResult) {
+		print("Done Recognizing: \(result.bestTranscription.formattedString)")
+	}
+	
+	public func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishSuccessfully successfully: Bool) {
+		print("Done recognizing successfully: \(successfully)")
 	}
 }
 
