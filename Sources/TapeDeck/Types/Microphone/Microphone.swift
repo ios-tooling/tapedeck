@@ -19,7 +19,6 @@ import Suite
 	private weak var pollingTimer: Timer?
 	private var isPausedDueToInterruption = false
 	private var interruptCount = 0
-	var speech: Speech?
 
 	public var pollingInterval: Frequency = 10 { didSet { self.setupTimer() }}
 	@Published public private(set) var isListening = false
