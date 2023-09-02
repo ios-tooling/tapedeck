@@ -43,7 +43,15 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	}
 
 	public func handle(buffer sampleBuffer: CMSampleBuffer) {
-		guard let input = assetWriterInput else { return }
+		guard let input = assetWriterInput else { 
+			print("No current writer configured")
+			return
+		}
+		
+		if assetWriter?.status == .unknown {
+			print("Unknown writer status")
+			return
+		}
 		
 		if !input.append(sampleBuffer) {
 			logg("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
@@ -54,6 +62,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		
 		if chunkSamplesRead >= chunkSize {
 			Task {
+				print("Creating a new writer")
 				try? await createWriter(startingAt: recordingDuration)
 			}
 		}
@@ -101,7 +110,9 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		input.markAsFinished()
 		let current = self.currentURL
 		
-		await writer.finishWriting()
+		if writer.status != .completed {
+			await writer.finishWriting()
+		}
 		try? await self.chunks.didFinishWriting(to: current)
 
 		assetWriterInput = nil

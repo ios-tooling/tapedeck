@@ -36,7 +36,7 @@ public class RecordingStore: ObservableObject {
 		do {
 			for url in [self.mainRecordingDirectory] + extraDirectories {
 				try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
-				let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]).filter { fileExtensions.contains($0.pathExtension) }
+				let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsPackageDescendants]).filter { fileExtensions.contains($0.pathExtension) }
 				recordings += urls.map { Recording(url: $0) }
 			}
 			
@@ -81,14 +81,17 @@ public class RecordingStore: ObservableObject {
 	
 	func didStartRecording() {
 		updateRecordings()
+		RecordingStore.Notifications.didStartRecording.notify()
 	}
 	
 	func didEndRecording() {
 		objectWillChange.sendOnMain()
+		RecordingStore.Notifications.didEndRecording.notify()
 	}
 	
 	func didFinishPostRecording() {
 		updateRecordings()
 		objectWillChange.sendOnMain()
+		RecordingStore.Notifications.didEndPostRecording.notify()
 	}
 }

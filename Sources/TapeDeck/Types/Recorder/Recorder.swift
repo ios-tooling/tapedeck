@@ -38,6 +38,8 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		setupInterruptions()
 	}
 	
+	public var isRecording: Bool { state == .running || state == .paused }
+	
 	public var duration: TimeInterval? {
 		guard let startedAt else { return nil }
 		return Date().timeIntervalSince(startedAt)
