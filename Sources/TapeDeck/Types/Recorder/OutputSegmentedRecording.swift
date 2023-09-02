@@ -22,6 +22,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	var outputType = Recorder.AudioFileType.wav
 	var internalType = Recorder.AudioFileType.wav
 	var currentURL: URL?
+	let queue = DispatchQueue(label: "segmented.recording", qos: .userInitiated)
 	
 	public var containerURL: URL?
 	
@@ -43,27 +44,30 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	}
 
 	public func handle(buffer sampleBuffer: CMSampleBuffer) {
-		guard let input = assetWriterInput else { 
-			print("No current writer configured")
-			return
-		}
-		
-		if assetWriter?.status == .unknown {
-			print("Unknown writer status")
-			return
-		}
-		
-		if !input.append(sampleBuffer) {
-			logg("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
-		}
-		chunkSamplesRead += Int64(sampleBuffer.numSamples)
-		samplesRead += Int64(sampleBuffer.numSamples)
-		recordingDuration = TimeInterval(samplesRead / Int64(sampleRate * 1))
-		
-		if chunkSamplesRead >= chunkSize {
-			Task {
-				print("Creating a new writer")
-				try? await createWriter(startingAt: recordingDuration)
+		queue.async { [weak self] in
+			guard let self else { return }
+			guard let input = assetWriterInput else {
+				print("No current writer configured")
+				return
+			}
+			
+			if assetWriter?.status == .unknown {
+				print("Unknown writer status")
+				return
+			}
+			
+			if !input.append(sampleBuffer) {
+				logg("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
+			}
+			chunkSamplesRead += Int64(sampleBuffer.numSamples)
+			samplesRead += Int64(sampleBuffer.numSamples)
+			recordingDuration = TimeInterval(samplesRead / Int64(sampleRate * 1))
+			
+			if chunkSamplesRead >= chunkSize {
+				queue.async {
+					print("Creating a new writer")
+					try? self.createWriter(startingAt: self.recordingDuration)
+				}
 			}
 		}
 	}
@@ -78,16 +82,16 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		samplesRead = 0
 		recordingDuration = 0
 
-		try await self.createWriter(startingAt: 0)
+		try self.createWriter(startingAt: 0)
 	}
 	
 	public func endRecording() async throws -> URL {
-		await closeCurrentWriter()
+		closeCurrentWriter()
 		return self.chunks.url
 	}
 	
-	func createWriter(startingAt offset: TimeInterval) async throws {
-		await closeCurrentWriter()
+	func createWriter(startingAt offset: TimeInterval) throws {
+		closeCurrentWriter()
 		
 		assetWriterInput = AVAssetWriterInput(mediaType: .audio, outputSettings: internalType.settings)
 		assetWriterInput.expectsMediaDataInRealTime = true
@@ -104,16 +108,18 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		self.currentURL = url
 	}
 	
-	func closeCurrentWriter() async {
+	func closeCurrentWriter() {
 		guard let input = assetWriterInput, let writer = assetWriter else { return }
 		
 		input.markAsFinished()
 		let current = self.currentURL
 		
 		if writer.status != .completed {
-			await writer.finishWriting()
+			writer.finishWriting() {
+				
+			}
 		}
-		try? await self.chunks.didFinishWriting(to: current)
+		try? self.chunks.didFinishWriting(to: current)
 
 		assetWriterInput = nil
 		assetWriter = nil
@@ -165,7 +171,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 			self.type = type
 			self.chunkLimit = limit
 			
-			RecordingStore.instance.addDirectory(url)
+			//RecordingStore.instance.addDirectory(url)
 			
 			if let existing = try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]) {
 				chunks = existing.compactMap({ ChunkInfo(url: $0)}).sorted()
@@ -187,13 +193,15 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 			return first.start..<(first.start + duration)
 		}
 		
-		func didFinishWriting(to url: URL?) async throws {
+		func didFinishWriting(to url: URL?) throws {
 			guard let url = url, let format = type, type != internalType else { return }
 			
-			let newURL = try await AudioFileConverter(source: url, to: format, at: url.replacingPathExtension(with: format.fileExtension), deletingSource: true, progress: nil).convert()
-
-			if let index = self.chunks.firstIndex(where: { $0.url == url }) {
-				self.chunks[index].url = newURL
+			Task {
+				let newURL = try await AudioFileConverter(source: url, to: format, at: url.replacingPathExtension(with: format.fileExtension), deletingSource: true, progress: nil).convert()
+				
+				if let index = self.chunks.firstIndex(where: { $0.url == url }) {
+					self.chunks[index].url = newURL
+				}
 			}
 		}
 

@@ -18,7 +18,7 @@ public class RecordingStore: ObservableObject {
 	var externalRecordings: [Recording] = []
 	public static var silenceDbThreshold: Float { return -50.0 } // everything below -50 dB will be clipped
 	
-	public private(set) var mainRecordingDirectory = FileManager.documentsDirectory
+	public private(set) var mainRecordingDirectory = FileManager.libraryDirectory
 	public var extraDirectories: [URL] = []
 	var cancellables: Set<AnyCancellable> = []
 	
@@ -33,17 +33,17 @@ public class RecordingStore: ObservableObject {
 	public func updateRecordings() {
 		var recordings: [Recording] = []
 		
-		do {
-			for url in [self.mainRecordingDirectory] + extraDirectories {
-				try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
-				let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsPackageDescendants]).filter { fileExtensions.contains($0.pathExtension) }
-				recordings += urls.map { Recording(url: $0) }
-			}
+		let sources = [self.mainRecordingDirectory] + extraDirectories
+		
+		for url in sources {
+			try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
+			guard let urls = try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { continue }
 			
-			self.recordings = (recordings + externalRecordings).sorted()
-		} catch {
-			logg(error: error, "Error when loading recordings: \(error)")
+			let filtered = urls.filter { fileExtensions.contains($0.pathExtension) }
+			recordings += filtered.map { Recording(url: $0) }
 		}
+		
+		self.recordings = (recordings + externalRecordings).sorted()
 		objectWillChange.sendOnMain()
 	}
 	

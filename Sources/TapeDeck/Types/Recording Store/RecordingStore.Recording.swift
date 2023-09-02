@@ -38,7 +38,7 @@ extension RecordingStore {
 		}
 		
 		public var isActive: Bool {
-			Recorder.instance.output?.containerURL == url
+			Recorder.instance.output?.containerURL?.deletingPathExtension().lastPathComponent == url.deletingPathExtension().lastPathComponent
 		}
 		
 		public static func <(lhs: Recording, rhs: Recording) -> Bool {
@@ -49,16 +49,18 @@ extension RecordingStore {
 			self.url = url
 			
 			startedAt = url.createdAt ?? startedAt
-			Task {
-				let asset = AVURLAsset(url: url, options: nil)
-				
-				if #available(iOS 15, *) {
-					do {
-						let cmtime = try await asset.load(.duration)
-						duration = cmtime.seconds
-						objectWillChange.sendOnMain()
-					} catch {
-						print("Failed to load asset: \(error) at \(url.path)")
+			if url.pathExtension != RecordingPackage.fileExtension {
+				Task {
+					let asset = AVURLAsset(url: url, options: nil)
+					
+					if #available(iOS 15, *) {
+						do {
+							let cmtime = try await asset.load(.duration)
+							duration = cmtime.seconds
+							objectWillChange.sendOnMain()
+						} catch {
+							print("Failed to load asset: \(error) at \(url.path)")
+						}
 					}
 				}
 			}
