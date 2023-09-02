@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  RecordingStore.Recording.swift
 //  
 //
 //  Created by Ben Gottlieb on 9/1/23.
@@ -27,10 +27,14 @@ extension RecordingStore {
 			url.pathExtension.fileExtensionToName + " recorded at \(startedAt.localTimeString(date: .none, time: .short))"
 		}
 		
-		public var isPlaying = false
+		public var isPlaying: Bool { RecordingPlayer.instance.current == self }
 		
 		public func togglePlaying() {
-			
+			if isPlaying {
+				RecordingPlayer.instance.stopPlaying(self)
+			} else {
+				RecordingPlayer.instance.play(self)
+			}
 		}
 		
 		public var isActive: Bool {
