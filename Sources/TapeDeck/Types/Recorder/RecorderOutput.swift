@@ -13,5 +13,7 @@ public protocol RecorderOutput: AnyObject {
 	func prepareToRecord() async throws
 	func handle(buffer: CMSampleBuffer)
 	func endRecording() async throws -> URL
+	
+	var containerURL: URL? { get }
 }
 

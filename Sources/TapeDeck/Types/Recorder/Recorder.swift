@@ -17,7 +17,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	
 	enum RecorderError: String, Error { case unableToAddOutput, unableToAddInput, noValidInputs, cantRecordOnSimulator, unableToCreateRecognitionRequest, unableToCreateRecognitionTask }
 	
-	public enum State { case idle, running, paused }
+	public enum State { case idle, running, paused, post }
 	
 	public var state = State.idle { didSet { objectWillChange.sendOnMain() }}
 	public var recordingDuration: TimeInterval = 0 { didSet { objectWillChange.sendOnMain() }}
@@ -88,7 +88,8 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		session.startRunning()
 		try await Microphone.instance.setActive(self)
 		state = .running
-		print("Now running")
+		
+		RecordingStore.instance.didStartRecording()
 	}
 	
 	@MainActor public func pause() async throws {
@@ -108,7 +109,10 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	@MainActor public func stop() async throws {
 		Microphone.instance.clearActive(self)
 		if state == .idle { return }
-		
+
+		RecordingStore.instance.didEndRecording()
+		state = .post
+
 		do {
 			_ = try await output?.endRecording()
 			session.stopRunning()
@@ -117,6 +121,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 			throw error
 		}
 		state = .idle
+		RecordingStore.instance.didFinishPostRecording()
 	}
 	
 	var currentAverage: Float = 0.0

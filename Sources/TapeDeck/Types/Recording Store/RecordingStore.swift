@@ -1,6 +1,6 @@
 //
 //  RecordingStore.swift
-//  
+//
 //
 //  Created by Ben Gottlieb on 8/13/23.
 //
@@ -9,17 +9,24 @@ import Foundation
 import CoreAudio
 import SwiftUI
 import Suite
+import AVFoundation
 
 public class RecordingStore: ObservableObject {
 	public static let instance = RecordingStore()
 	
-	@Published public var recordings: [Recording] = []
+	public var recordings: [Recording] = []
 	var externalRecordings: [Recording] = []
 	public static var silenceDbThreshold: Float { return -50.0 } // everything below -50 dB will be clipped
-
-	public var mainRecordingDirectory = FileManager.documentsDirectory { didSet { self.setupCurrentRecordings() }}
+	
+	public private(set) var mainRecordingDirectory = FileManager.documentsDirectory
 	public var extraDirectories: [URL] = []
 	var cancellables: Set<AnyCancellable> = []
+	
+	public func setup(root: URL) {
+		if mainRecordingDirectory == root { return }
+		mainRecordingDirectory = root
+		updateRecordings()
+	}
 	
 	public var fileExtensions = [Recorder.AudioFileType.m4a.fileExtension, Recorder.AudioFileType.wav.fileExtension, Recorder.AudioFileType.mp3.fileExtension, RecordingPackage.fileExtension]
 	
@@ -33,15 +40,14 @@ public class RecordingStore: ObservableObject {
 				recordings += urls.map { Recording(url: $0) }
 			}
 			
-			self.recordings = recordings + externalRecordings
+			self.recordings = (recordings + externalRecordings).sorted()
 		} catch {
 			logg(error: error, "Error when loading recordings: \(error)")
 		}
+		objectWillChange.sendOnMain()
 	}
 	
 	init() {
-		self.updateRecordings()
-		
 		Recorder.instance.objectWillChange
 			.sink { [weak self] _ in
 				self?.objectWillChange.sendOnMain()
@@ -66,29 +72,6 @@ public class RecordingStore: ObservableObject {
 		self.updateRecordings()
 	}
 	
-	public class Recording: Identifiable, Equatable {
-		public let url: URL
-		public var id: URL { url }
-		public var isPackage: Bool { url.pathExtension == RecordingPackage.fileExtension }
-		
-		public var name: String { url.lastPathComponent }
-		
-		init(url: URL) {
-			self.url = url
-		}
-		
-		public var package: RecordingPackage? {
-			guard isPackage else { return nil }
-			return RecordingPackage(url: url)
-		}
-
-		public static func ==(lhs: Recording, rhs: Recording) -> Bool { lhs.url == rhs.url }
-		
-		func delete() {
-			try? FileManager.default.removeItem(at: url)
-		}
-	}
-	
 	public func addAudio(at urls: [URL]) {
 		urls.forEach {
 			externalRecordings.append(Recording(url: $0))
@@ -96,12 +79,16 @@ public class RecordingStore: ObservableObject {
 		self.updateRecordings()
 	}
 	
-	func setupCurrentRecordings() {
-//		do {
-//			try FileManager.default.createDirectory(at: self.mainRecordingDirectory, withIntermediateDirectories: true, attributes: nil)
-//			let urls = try FileManager.default.contentsOfDirectory(at: self.mainRecordingDirectory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
-//			self.recordings = urls.map { AudioAnalysis(url: $0, andLoadSampleCount: 2000, range: 0...10) }
-//		} catch {
-//		}
+	func didStartRecording() {
+		updateRecordings()
+	}
+	
+	func didEndRecording() {
+		objectWillChange.sendOnMain()
+	}
+	
+	func didFinishPostRecording() {
+		updateRecordings()
+		objectWillChange.sendOnMain()
 	}
 }

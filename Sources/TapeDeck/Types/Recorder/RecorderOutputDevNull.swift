@@ -15,6 +15,8 @@ public class OutputDevNull: RecorderOutput {
 	public func prepareToRecord() async throws {
 		
 	}
+	
+	public var containerURL: URL? { nil }
 
 	public func handle(buffer: CMSampleBuffer) {
 		

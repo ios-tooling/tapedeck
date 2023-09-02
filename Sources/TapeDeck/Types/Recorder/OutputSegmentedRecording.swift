@@ -23,12 +23,15 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	var internalType = Recorder.AudioFileType.wav
 	var currentURL: URL?
 	
+	public var containerURL: URL?
+	
 	var maxFileCount: Int? {
 		get { chunks.chunkLimit }
 		set { chunks.chunkLimit = newValue }
 	}
 	
 	public init(in url: URL, outputType: Recorder.AudioFileType = .m4a, bufferDuration: TimeInterval = 30, maxFileCount: Int? = nil) {
+		self.containerURL = url
 		if let count = maxFileCount {
 			chunkDuration = bufferDuration / TimeInterval(count)
 		} else {

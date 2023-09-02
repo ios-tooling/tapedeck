@@ -20,6 +20,7 @@ public class OutputSingleFileRecording: RecorderOutput {
 	var outputType = Recorder.AudioFileType.wav
 	var internalType = Recorder.AudioFileType.wav
 	
+	public var containerURL: URL? { url }
 	public init(url dest: URL, type: Recorder.AudioFileType = .wav) {
 		url = dest.deletingPathExtension().appendingPathExtension(internalType.fileExtension)
 		outputType = type
@@ -29,6 +30,7 @@ public class OutputSingleFileRecording: RecorderOutput {
 	}
 
 	public func handle(buffer sampleBuffer: CMSampleBuffer) {
+		guard let assetWriterInput else { return }
 		if !assetWriterInput.append(sampleBuffer) {
 			logg("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
 		}
