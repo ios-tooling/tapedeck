@@ -38,7 +38,8 @@ extension RecordingStore {
 		}
 		
 		public var isActive: Bool {
-			Recorder.instance.output?.containerURL?.deletingPathExtension().lastPathComponent == url.deletingPathExtension().lastPathComponent
+			if !Recorder.instance.isRecording { return false }
+			return Recorder.instance.output?.containerURL?.deletingPathExtension().lastPathComponent == url.deletingPathExtension().lastPathComponent
 		}
 		
 		public static func <(lhs: Recording, rhs: Recording) -> Bool {
