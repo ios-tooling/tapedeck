@@ -110,16 +110,22 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	
 	func closeCurrentWriter() {
 		guard let input = assetWriterInput, let writer = assetWriter else { return }
-		
 		input.markAsFinished()
-		let current = self.currentURL
-		
-		if writer.status != .completed {
-			writer.finishWriting() {
-				
+
+		if let current = self.currentURL {
+			Task {
+				if writer.status != .completed {
+					writer.finishWriting() {
+						
+					}
+					do {
+						try await self.chunks.didFinishWriting(to: current)
+					} catch {
+						print("Problem finishing the conversion: \(error)")
+					}
+				}
 			}
 		}
-		try? self.chunks.didFinishWriting(to: current)
 
 		assetWriterInput = nil
 		assetWriter = nil
@@ -193,15 +199,13 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 			return first.start..<(first.start + duration)
 		}
 		
-		func didFinishWriting(to url: URL?) throws {
-			guard let url = url, let format = type, type != internalType else { return }
+		func didFinishWriting(to url: URL) async throws {
+			guard let format = type, type != internalType else { return }
 			
-			Task {
-				let newURL = try await AudioFileConverter(source: url, to: format, at: url.replacingPathExtension(with: format.fileExtension), deletingSource: true, progress: nil).convert()
-				
-				if let index = self.chunks.firstIndex(where: { $0.url == url }) {
-					self.chunks[index].url = newURL
-				}
+			let newURL = try await AudioFileConverter(source: url, to: format, at: url.replacingPathExtension(with: format.fileExtension), deletingSource: true, progress: nil).convert()
+			
+			if let index = self.chunks.firstIndex(where: { $0.url == url }) {
+				self.chunks[index].url = newURL
 			}
 		}
 
