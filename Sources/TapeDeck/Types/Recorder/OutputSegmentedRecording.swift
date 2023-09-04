@@ -202,7 +202,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		func didFinishWriting(to url: URL) async throws {
 			guard let format = type, type != internalType else { return }
 			
-			let newURL = try await AudioFileConverter(source: url, to: format, at: url.replacingPathExtension(with: format.fileExtension), deletingSource: true, progress: nil).convert()
+			let newURL = try await AudioFileConverter(source: url, to: format, at: url.replacingPathExtension(with: format.fileExtension), progress: nil).convert()
 			
 			if let index = self.chunks.firstIndex(where: { $0.url == url }) {
 				self.chunks[index].url = newURL

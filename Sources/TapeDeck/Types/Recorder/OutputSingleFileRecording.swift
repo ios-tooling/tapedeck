@@ -55,7 +55,7 @@ public class OutputSingleFileRecording: RecorderOutput {
 		await closeCurrentWriter()
 		
 		if internalType != outputType {
-			let converter = AudioFileConverter(source: url, to: outputType, at: outputType.url(from: url), deletingSource: true, progress: nil)
+			let converter = AudioFileConverter(source: url, to: outputType, at: outputType.url(from: url), progress: nil)
 			return try await converter.convert()
 		}
 		
