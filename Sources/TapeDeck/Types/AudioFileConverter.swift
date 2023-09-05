@@ -23,11 +23,13 @@ public class AudioFileConverter: NSObject {
 	private var deleteSource: Bool = false
 	private var progress: Binding<Double>?
 	
-	public init(source: URL, to output: Recorder.AudioFileType, at dest: URL, deletingSource: Bool = false, progress: Binding<Double>?) {
+	public static var deleteConversionArtifacts = true
+	
+	public init(source: URL, to output: Recorder.AudioFileType, at dest: URL, deletingSource: Bool? = nil, progress: Binding<Double>?) {
 		sources = [source]
 		outputFormat = output
 		destination = dest
-		deleteSource = deletingSource
+		deleteSource = deletingSource ?? Self.deleteConversionArtifacts
 		self.progress = progress
 		super.init()
 		self.addAsObserver(of: AVAudioSession.interruptionNotification, selector: #selector(interruptionReceived))
