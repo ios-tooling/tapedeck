@@ -226,7 +226,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 			totalChunks += 1
 			
 			let offsetString = offset.durationString(showLeadingZero: true).replacingOccurrences(of: ":", with: ";")
-			let name = "\(totalChunks). \(offsetString)-\(duration).\(ext)"
+			let name = "\(String(format: "%06d", totalChunks)). \(offsetString)-\(duration).\(ext)"
 			let newURL = parent.appendingPathComponent(name)
 			if let chunk = ChunkInfo(url: newURL) { chunks.append(chunk) }
 			
