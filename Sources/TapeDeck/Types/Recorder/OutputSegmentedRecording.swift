@@ -65,7 +65,6 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 			
 			if chunkSamplesRead >= chunkSize {
 				queue.async {
-					print("Creating a new writer")
 					try? self.createWriter(startingAt: self.recordingDuration)
 				}
 			}
@@ -160,7 +159,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		}
 		
 		let urls = Array(chunks[firstIndex...lastIndex]).map { $0.url }
-		return try await AudioFileConverter(sources: urls, start: startOffset, endChunkDuration: endDuration, to: format, at: url, deletingSource: false, progress: progress).convert()
+		return try await AudioFileConverter(sources: urls, start: startOffset, endChunkDuration: endDuration, to: format, at: url, progress: progress).convert()
 	}
 
 	class ChunkManager {

@@ -35,11 +35,11 @@ public class AudioFileConverter: NSObject {
 		self.addAsObserver(of: AVAudioSession.interruptionNotification, selector: #selector(interruptionReceived))
 	}
 	
-	public init(sources: [URL], start: TimeInterval?, endChunkDuration: TimeInterval?, to output: Recorder.AudioFileType, at dest: URL, deletingSource: Bool = false, progress: Binding<Double>?) {
+	public init(sources: [URL], start: TimeInterval?, endChunkDuration: TimeInterval?, to output: Recorder.AudioFileType, at dest: URL, deletingSource: Bool? = nil, progress: Binding<Double>?) {
 		self.sources = sources
 		outputFormat = output
 		destination = dest
-		deleteSource = deletingSource
+		deleteSource = deletingSource ?? Self.deleteConversionArtifacts
 		endDuration = endChunkDuration
 		startOffset = start
 		self.progress = progress
@@ -61,6 +61,8 @@ public class AudioFileConverter: NSObject {
 			exportSession.outputURL = destination
 			
 			await exportSession.export()
+			if self.deleteSource { try? FileManager.default.removeItem(at: source) }
+
 		}
 		return destination
 	}
