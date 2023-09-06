@@ -10,29 +10,39 @@ import CoreAudio
 import SwiftUI
 import Suite
 import AVFoundation
+import Journalist
 
 public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomStringConvertible, Comparable {
 	public let url: URL
 	public var startedAt: Date = Date()
 	public var id: URL { url }
 	public var duration: TimeInterval?
+	
+	var segmentInfo: [SegmentPlaybackInfo]?
+	var currentSegmentIndex = 0
+	var playbackTask: Task<Void, Error>?
+	public var playbackStartedAt: Date?
+	
 	public var runningDuration: TimeInterval? {
+		if let playbackStartedAt { return Date().timeIntervalSince(playbackStartedAt) }
 		if isActive { return Date().timeIntervalSince(startedAt) }
 		return nil
 	}
+	
+	
 	public var isPackage: Bool { url.pathExtension == RecordingPackage.fileExtension }
 	
 	public var title: String {
 		url.pathExtension.fileExtensionToName + " recorded at \(startedAt.localTimeString(date: .none, time: .short))"
 	}
 	
-	public var isPlaying: Bool { RecordingPlayer.instance.current == self }
+	public var isPlaying: Bool { playbackStartedAt != nil }
 	
 	public func togglePlaying() {
 		if isPlaying {
 			stopPlayback()
 		} else {
-			startPlayback()
+			report { try self.startPlayback() }
 		}
 	}
 	
@@ -49,7 +59,10 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		self.url = url
 		
 		startedAt = url.createdAt ?? startedAt
-		if url.pathExtension != RecordingPackage.fileExtension {
+		if isPackage {
+			segmentInfo = (try? buildSegmentPlaybackInfo()) ?? []
+			duration = segmentInfo?.map { $0.duration }.sum()
+		} else {
 			Task {
 				let asset = AVURLAsset(url: url, options: nil)
 				

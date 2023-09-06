@@ -11,9 +11,8 @@ import AVFoundation
 public class RecordingPlayer: ObservableObject {
 	public static let instance = RecordingPlayer()
 	
-	public var current: SavedRecording? { didSet {
-		current?.stopPlayback()
-		
+	public var current: SavedRecording? { willSet {
+		if let current, current.isPlaying { current.stopPlayback() }
 	}}
 	
 	let player = AVPlayer()

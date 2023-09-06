@@ -7,7 +7,7 @@ let package = Package(
     name: "TapeDeck",
 	 platforms: [
 				 .macOS(.v12),
-				 .iOS(.v13),
+				 .iOS(.v14),
 				 .watchOS(.v8)
 		  ],
     products: [
@@ -18,13 +18,14 @@ let package = Package(
     ],
 	 dependencies: [
 		.package(url: "https://github.com/bengottlieb/Suite.git", from: "1.0.92"),
+		.package(url: "https://github.com/bengottlieb/Journalist.git", from: "1.0.6"),
 
 	 ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-			name: "TapeDeck", dependencies: ["Suite"]),
+			name: "TapeDeck", dependencies: ["Suite", "Journalist"]),
         .testTarget(
             name: "TapeDeckTests",
             dependencies: ["TapeDeck"]),

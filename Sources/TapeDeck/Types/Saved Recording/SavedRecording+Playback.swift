@@ -8,29 +8,95 @@
 import Foundation
 import AVFoundation
 
-extension SavedRecording {
-	public func startPlayback() {
-		let item = AVPlayerItem(url: url)
-		let player = RecordingPlayer.instance.player
+struct SegmentPlaybackInfo: Comparable {
+	let duration: TimeInterval
+	let filename: String
+	
+	func url(basedOn base: URL) -> URL { base.appendingPathComponent(filename) }
+	static func <(lhs: Self, rhs: Self) -> Bool {
+		lhs.filename < rhs.filename
+	}
+	
+	init(url: URL) throws {
+		filename = url.lastPathComponent
 		
-		RecordingPlayer.instance.current = self
+		let asset = AVURLAsset(url: url)
+		
+		let reader = try AVAssetReader(asset: asset)
+		duration = reader.asset.duration.seconds
+	}
+}
+
+extension SavedRecording {
+	func buildSegmentPlaybackInfo() throws -> [SegmentPlaybackInfo] {
+		var results: [SegmentPlaybackInfo] = []
+		let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
+		
+		for url in urls {
+			do {
+				let info = try SegmentPlaybackInfo(url: url)
+				results.append(info)
+			} catch {
+				print("Failed to build info for \(url.path)")
+			}
+		}
+		
+		return results.sorted()
+	}
+	
+	@discardableResult func playSegment(index: Int) -> Bool {
+		guard let segmentInfo, index < segmentInfo.count else {
+			stopPlayback()
+			return false
+		}
+		
+		let info = segmentInfo[index]
+		play(url: info.url(basedOn: url), duration: info.duration) {
+			if !self.playSegment(index: index + 1) {
+				print("All done")
+			}
+		}
+		return true
+	}
+	
+	func play(url: URL, duration: TimeInterval?, completion: @escaping () -> Void) {
+		playbackTask?.cancel()
+		
+		let player = RecordingPlayer.instance.player
+		let item = AVPlayerItem(url: url)
 		player.replaceCurrentItem(with: item)
 		player.play()
-		objectWillChange.send()
 		
-		RecordingPlayer.instance.playTimer?.invalidate()
-		if let duration = duration {
-			RecordingPlayer.instance.playTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false, block: { _ in
+		if let duration {
+			playbackTask = Task.detached {
+				try await Task.sleep(nanoseconds: UInt64(1_000_000_000 * duration))
+				completion()
+			}
+		}
+	}
+	
+	public func startPlayback() throws {
+		RecordingPlayer.instance.current = self
+		playbackStartedAt = Date()
+
+		if isPackage {
+			if segmentInfo	== nil { segmentInfo = try buildSegmentPlaybackInfo() }
+			playSegment(index: 0)
+		} else {
+			play(url: url, duration: duration) {
 				self.stopPlayback()
-			})
+			}
 		}
 		objectWillChange.send()
+		print("Playing: \(self.isPlaying)")
 	}
 	
 	public func stopPlayback() {
-		RecordingPlayer.instance.playTimer?.invalidate()
-		
-		RecordingPlayer.instance.player.pause()
-		objectWillChange.send()
+		playbackStartedAt = nil
+		playbackTask?.cancel()
+		if RecordingPlayer.instance.current == self {
+			RecordingPlayer.instance.player.pause()
+		}
+		objectWillChange.sendOnMain()
 	}
 }
