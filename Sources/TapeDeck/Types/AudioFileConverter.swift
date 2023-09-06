@@ -11,7 +11,7 @@ import Combine
 import Suite
 
 public class AudioFileConverter: NSObject {
-	enum ConversionError: Error { case outputTypeNotSupported }
+	enum ConversionError: Error { case noInput, outputTypeNotSupported, failedtoCreateExportSesssion }
 	
 	private let queue = DispatchQueue(label: "audioFileConverter", qos: .userInitiated)
 	
@@ -50,8 +50,22 @@ public class AudioFileConverter: NSObject {
 	@objc func interruptionReceived(note: Notification) {
 		logg(error: nil, "interrupted")
 	}
-
+	
 	public func convert() async throws -> URL {
+		for source in sources {
+			guard let exportSession = AVAssetExportSession(asset: AVAsset(url: source), presetName: AVAssetExportPresetAppleM4A) else {
+				throw ConversionError.failedtoCreateExportSesssion
+			}
+			
+			exportSession.outputFileType = .m4a
+			exportSession.outputURL = destination
+			
+			await exportSession.export()
+		}
+		return destination
+	}
+
+	public func convert2() async throws -> URL {
 		try await withCheckedThrowingContinuation { continuation in
 			guard let format = outputFormat.formatID, let outputID = outputFormat.outputID else {
 				continuation.resume(throwing: ConversionError.outputTypeNotSupported)
