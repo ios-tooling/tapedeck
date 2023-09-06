@@ -17,13 +17,13 @@ struct SegmentPlaybackInfo: Comparable {
 		lhs.filename < rhs.filename
 	}
 	
-	init(url: URL) throws {
+	init?(url: URL) {
 		filename = url.lastPathComponent
-		
-		let asset = AVURLAsset(url: url)
-		
-		let reader = try AVAssetReader(asset: asset)
-		duration = reader.asset.duration.seconds
+		if let seconds = url.audioDuration {
+			self.duration = seconds
+		} else {
+			return nil
+		}
 	}
 }
 
@@ -31,15 +31,7 @@ extension SavedRecording {
 	func buildSegmentPlaybackInfo() throws -> [SegmentPlaybackInfo] {
 		var results: [SegmentPlaybackInfo] = []
 		let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
-		
-		for url in urls {
-			do {
-				let info = try SegmentPlaybackInfo(url: url)
-				results.append(info)
-			} catch {
-				print("Failed to build info for \(url.path)")
-			}
-		}
+		results = urls.compactMap { SegmentPlaybackInfo(url: $0) }
 		
 		return results.sorted()
 	}

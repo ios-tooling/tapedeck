@@ -63,19 +63,7 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 			segmentInfo = (try? buildSegmentPlaybackInfo()) ?? []
 			duration = segmentInfo?.map { $0.duration }.sum()
 		} else {
-			Task {
-				let asset = AVURLAsset(url: url, options: nil)
-				
-				if #available(iOS 15, *) {
-					do {
-						let cmtime = try await asset.load(.duration)
-						duration = cmtime.seconds
-						objectWillChange.sendOnMain()
-					} catch {
-						print("Failed to load asset: \(error) at \(url.path)")
-					}
-				}
-			}
+			duration = url.audioDuration
 		}
 	}
 	
