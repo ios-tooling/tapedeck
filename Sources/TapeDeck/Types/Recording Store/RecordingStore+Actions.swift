@@ -18,7 +18,7 @@ public extension RecordingStore {
 		
 		if segmented {
 			url = url.appendingPathExtension(RecordingPackage.fileExtension)
-			output = OutputSegmentedRecording(in: url, bufferDuration: 10.0)
+			output = OutputSegmentedRecording(in: url, bufferDuration: 1)
 		} else{
 			url = url.appendingPathExtension("m4a")
 			output = OutputSingleFileRecording(url: url, type: .m4a)

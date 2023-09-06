@@ -25,6 +25,8 @@ struct SegmentPlaybackInfo: Comparable {
 			return nil
 		}
 	}
+	
+	func playerItem(basedOn base: URL) -> AVPlayerItem { AVPlayerItem(url: url(basedOn: base)) }
 }
 
 extension SavedRecording {
@@ -36,23 +38,8 @@ extension SavedRecording {
 		return results.sorted()
 	}
 	
-	@discardableResult func playSegment(index: Int) -> Bool {
-		guard let segmentInfo, index < segmentInfo.count else {
-			stopPlayback()
-			return false
-		}
-		
-		let info = segmentInfo[index]
-		play(url: info.url(basedOn: url), duration: info.duration) {
-			if !self.playSegment(index: index + 1) {
-				print("All done")
-			}
-		}
-		return true
-	}
-	
 	func play(url: URL, duration: TimeInterval?, completion: @escaping () -> Void) {
-		playbackTask?.cancel()
+		playbackTimer?.invalidate()
 		
 		let player = RecordingPlayer.instance.player
 		let item = AVPlayerItem(url: url)
@@ -60,10 +47,17 @@ extension SavedRecording {
 		player.play()
 		
 		if let duration {
-			playbackTask = Task.detached {
-				try await Task.sleep(nanoseconds: UInt64(1_000_000_000 * duration))
-				completion()
-			}
+			playbackTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { _ in completion() }
+		}
+	}
+	
+	func playSegments(segments: [SegmentPlaybackInfo], completion: @escaping () -> Void) {
+		RecordingPlayer.instance.queuePlayer = AVQueuePlayer(items: segments.map { $0.playerItem(basedOn: url) })
+		RecordingPlayer.instance.player.pause()
+		RecordingPlayer.instance.queuePlayer.play()
+
+		if let duration {
+			playbackTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { _ in completion() }
 		}
 	}
 	
@@ -73,20 +67,23 @@ extension SavedRecording {
 
 		if isPackage {
 			if segmentInfo	== nil { segmentInfo = try buildSegmentPlaybackInfo() }
-			playSegment(index: 0)
+			playSegments(segments: segmentInfo!) {
+				self.stopPlayback()
+			}
 		} else {
 			play(url: url, duration: duration) {
 				self.stopPlayback()
 			}
 		}
 		objectWillChange.send()
-		print("Playing: \(self.isPlaying)")
 	}
 	
 	public func stopPlayback() {
 		playbackStartedAt = nil
-		playbackTask?.cancel()
+		playbackTimer?.invalidate()
+		
 		if RecordingPlayer.instance.current == self {
+			RecordingPlayer.instance.queuePlayer.pause()
 			RecordingPlayer.instance.player.pause()
 		}
 		objectWillChange.sendOnMain()

@@ -20,7 +20,7 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	
 	var segmentInfo: [SegmentPlaybackInfo]?
 	var currentSegmentIndex = 0
-	var playbackTask: Task<Void, Error>?
+	weak var playbackTimer: Timer?
 	public var playbackStartedAt: Date?
 	
 	public var runningDuration: TimeInterval? {
@@ -60,8 +60,11 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		
 		startedAt = url.createdAt ?? startedAt
 		if isPackage {
-			segmentInfo = (try? buildSegmentPlaybackInfo()) ?? []
-			duration = segmentInfo?.map { $0.duration }.sum()
+			Task {
+				segmentInfo = (try? buildSegmentPlaybackInfo()) ?? []
+				duration = segmentInfo?.map { $0.duration }.sum()
+				objectWillChange.sendOnMain()
+			}
 		} else {
 			duration = url.audioDuration
 		}

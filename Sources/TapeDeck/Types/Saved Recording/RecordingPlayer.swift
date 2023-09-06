@@ -15,6 +15,7 @@ public class RecordingPlayer: ObservableObject {
 		if let current, current.isPlaying { current.stopPlayback() }
 	}}
 	
-	let player = AVPlayer()
+	var player = AVPlayer()
+	var queuePlayer = AVQueuePlayer()
 	weak var playTimer: Timer?
 }
