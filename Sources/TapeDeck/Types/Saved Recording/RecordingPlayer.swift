@@ -12,7 +12,7 @@ public class RecordingPlayer: ObservableObject {
 	public static let instance = RecordingPlayer()
 	
 	public var current: SavedRecording? { willSet {
-		if let current, current.isPlaying { current.stopPlayback() }
+		if let current, current.state == .playing { current.stopPlayback() }
 	}}
 	
 	var player = AVPlayer()

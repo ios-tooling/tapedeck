@@ -66,8 +66,8 @@ extension SavedRecording {
 		playbackStartedAt = Date()
 
 		if isPackage {
-			if segmentInfo	== nil { segmentInfo = try buildSegmentPlaybackInfo() }
-			playSegments(segments: segmentInfo!) {
+			guard let segmentInfo else { return }
+			playSegments(segments: segmentInfo) {
 				self.stopPlayback()
 			}
 		} else {

@@ -17,6 +17,9 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	public var startedAt: Date = Date()
 	public var id: URL { url }
 	public var duration: TimeInterval?
+	public var state: RecordingState = .preparing
+	
+	public enum RecordingState { case preparing, ready, playing }
 	
 	var segmentInfo: [SegmentPlaybackInfo]?
 	var currentSegmentIndex = 0
@@ -35,11 +38,9 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	public var title: String {
 		url.pathExtension.fileExtensionToName + " recorded at \(startedAt.localTimeString(date: .none, time: .short))"
 	}
-	
-	public var isPlaying: Bool { playbackStartedAt != nil }
-	
+		
 	public func togglePlaying() {
-		if isPlaying {
+		if state == .playing {
 			stopPlayback()
 		} else {
 			report { try self.startPlayback() }
@@ -63,6 +64,7 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 			Task {
 				segmentInfo = (try? buildSegmentPlaybackInfo()) ?? []
 				duration = segmentInfo?.map { $0.duration }.sum()
+				state = .ready
 				objectWillChange.sendOnMain()
 			}
 		} else {
