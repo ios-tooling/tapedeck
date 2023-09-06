@@ -14,8 +14,8 @@ import AVFoundation
 public class RecordingStore: ObservableObject {
 	public static let instance = RecordingStore()
 	
-	public var recordings: [Recording] = []
-	var externalRecordings: [Recording] = []
+	public var recordings: [SavedRecording] = []
+	var externalRecordings: [SavedRecording] = []
 	public static var silenceDbThreshold: Float { return -50.0 } // everything below -50 dB will be clipped
 	
 	public private(set) var mainRecordingDirectory = FileManager.libraryDirectory
@@ -31,7 +31,7 @@ public class RecordingStore: ObservableObject {
 	public var fileExtensions = [Recorder.AudioFileType.m4a.fileExtension, Recorder.AudioFileType.wav.fileExtension, Recorder.AudioFileType.mp3.fileExtension, RecordingPackage.fileExtension]
 	
 	public func updateRecordings() {
-		var recordings: [Recording] = []
+		var recordings: [SavedRecording] = []
 		
 		let sources = [self.mainRecordingDirectory] + extraDirectories
 		
@@ -40,7 +40,7 @@ public class RecordingStore: ObservableObject {
 			guard let urls = try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { continue }
 			
 			let filtered = urls.filter { fileExtensions.contains($0.pathExtension) }
-			recordings += filtered.map { Recording(url: $0) }
+			recordings += filtered.map { SavedRecording(url: $0) }
 		}
 		
 		self.recordings = (recordings + externalRecordings).sorted()
@@ -55,7 +55,7 @@ public class RecordingStore: ObservableObject {
 			.store(in: &cancellables)
 	}
 	
-	public func delete(recording: Recording) {
+	public func delete(recording: SavedRecording) {
 		if let index = recordings.firstIndex(of: recording) {
 			recordings.remove(at: index)
 			recording.delete()
@@ -68,13 +68,13 @@ public class RecordingStore: ObservableObject {
 	}
 	
 	public func addAudio(at url: URL) {
-		externalRecordings.append(Recording(url: url))
+		externalRecordings.append(SavedRecording(url: url))
 		self.updateRecordings()
 	}
 	
 	public func addAudio(at urls: [URL]) {
 		urls.forEach {
-			externalRecordings.append(Recording(url: $0))
+			externalRecordings.append(SavedRecording(url: $0))
 		}
 		self.updateRecordings()
 	}

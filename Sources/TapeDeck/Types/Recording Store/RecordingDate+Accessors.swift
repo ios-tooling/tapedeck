@@ -11,7 +11,7 @@ import Foundation
 public struct RecordingDate: Identifiable {
 	public var id: Date { date }
 	public var date: Date
-	public var recordings: [RecordingStore.Recording] = []
+	public var recordings: [SavedRecording] = []
 	
 	public var title: String { 
 		if #available(iOS 15.0, *) {
