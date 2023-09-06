@@ -59,6 +59,7 @@ public class RecordingStore: ObservableObject {
 		if let index = recordings.firstIndex(of: recording) {
 			recordings.remove(at: index)
 			recording.delete()
+			objectWillChange.send()
 		}
 	}
 	
@@ -84,14 +85,23 @@ public class RecordingStore: ObservableObject {
 		RecordingStore.Notifications.didStartRecording.notify()
 	}
 	
-	func didEndRecording() {
-		objectWillChange.sendOnMain()
+	func didEndRecording(to output: RecorderOutput?) {
 		RecordingStore.Notifications.didEndRecording.notify()
 	}
 	
-	func didFinishPostRecording() {
-		updateRecordings()
+	func didFinishPostRecording(to output: RecorderOutput?) {
+		if let url = output?.containerURL {
+			replace(SavedRecording(url: url))
+		}
 		objectWillChange.sendOnMain()
 		RecordingStore.Notifications.didEndPostRecording.notify()
+	}
+	
+	func replace(_ recording: SavedRecording) {
+		if let index = recordings.firstIndex(where: { $0.url.isSameFile(as: recording.url) }) {
+			recordings[index] = recording
+		} else {
+			recordings.append(recording)
+		}
 	}
 }

@@ -17,9 +17,9 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	public var startedAt: Date = Date()
 	public var id: URL { url }
 	public var duration: TimeInterval?
-	public var state: RecordingState = .preparing
+	public var state: State = .ready
 	
-	public enum RecordingState { case preparing, ready, playing }
+	public enum State { case preparing, ready, playing }
 	
 	var segmentInfo: [SegmentPlaybackInfo]?
 	var currentSegmentIndex = 0
@@ -56,15 +56,24 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		lhs.startedAt < rhs.startedAt
 	}
 	
+	func loadSegments() async {
+		do {
+			state = .preparing
+			segmentInfo = try buildSegmentPlaybackInfo()
+			duration = segmentInfo?.map { $0.duration }.sum()
+			state = .ready
+		} catch {
+			print("Failed to load segments: \(error)")
+		}
+	}
+	
 	init(url: URL) {
 		self.url = url
 		
 		startedAt = url.createdAt ?? startedAt
 		if isPackage {
 			Task {
-				segmentInfo = (try? buildSegmentPlaybackInfo()) ?? []
-				duration = segmentInfo?.map { $0.duration }.sum()
-				state = .ready
+				await loadSegments()
 				objectWillChange.sendOnMain()
 			}
 		} else {

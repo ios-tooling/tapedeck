@@ -71,7 +71,6 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 			try await output.prepareToRecord()
 		}
 		if session.outputs.isEmpty {
-			print("Adding outputs")
 			audioOutput.setSampleBufferDelegate(self, queue: queue)
 			guard session.canAddOutput(audioOutput) else { throw RecorderError.unableToAddOutput }
 			
@@ -79,7 +78,6 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		}
 		
 		if session.inputs.isEmpty {
-			print("Adding inputs")
 			guard let audioDevice = AVCaptureDevice.default(for: .audio) else { throw RecorderError.noValidInputs}
 			let audioIn = try AVCaptureDeviceInput(device: audioDevice)
 			
@@ -112,7 +110,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		Microphone.instance.clearActive(self)
 		if state == .idle { return }
 
-		RecordingStore.instance.didEndRecording()
+		RecordingStore.instance.didEndRecording(to: output)
 		state = .post
 
 		do {
@@ -123,7 +121,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 			throw error
 		}
 		state = .idle
-		RecordingStore.instance.didFinishPostRecording()
+		RecordingStore.instance.didFinishPostRecording(to: output)
 	}
 	
 	var currentAverage: Float = 0.0

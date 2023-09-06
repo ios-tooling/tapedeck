@@ -52,8 +52,9 @@ extension SavedRecording {
 	}
 	
 	func playSegments(segments: [SegmentPlaybackInfo], completion: @escaping () -> Void) {
-		RecordingPlayer.instance.queuePlayer = AVQueuePlayer(items: segments.map { $0.playerItem(basedOn: url) })
 		RecordingPlayer.instance.player.pause()
+		RecordingPlayer.instance.queuePlayer.pause()
+		RecordingPlayer.instance.queuePlayer = AVQueuePlayer(items: segments.map { $0.playerItem(basedOn: url) })
 		RecordingPlayer.instance.queuePlayer.play()
 
 		if let duration {
@@ -62,9 +63,11 @@ extension SavedRecording {
 	}
 	
 	public func startPlayback() throws {
+		if state != .ready { return }
 		RecordingPlayer.instance.current = self
 		playbackStartedAt = Date()
 
+		state = .playing
 		if isPackage {
 			guard let segmentInfo else { return }
 			playSegments(segments: segmentInfo) {
@@ -79,6 +82,8 @@ extension SavedRecording {
 	}
 	
 	public func stopPlayback() {
+		if state != .playing { return }
+		state = .ready
 		playbackStartedAt = nil
 		playbackTimer?.invalidate()
 		

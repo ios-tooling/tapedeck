@@ -19,28 +19,17 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	var chunkSamplesRead: Int64 = 0
 	var samplesRead: Int64 = 0
 	var recordingDuration: TimeInterval = 0
-	var outputType = Recorder.AudioFileType.wav
+	var outputType = Recorder.AudioFileType.m4a
 	var internalType = Recorder.AudioFileType.wav
 	var currentURL: URL?
 	let queue = DispatchQueue(label: "segmented.recording", qos: .userInitiated)
 	
 	public var containerURL: URL?
 	
-	var maxFileCount: Int? {
-		get { chunks.chunkLimit }
-		set { chunks.chunkLimit = newValue }
-	}
-	
-	public init(in url: URL, outputType: Recorder.AudioFileType = .m4a, bufferDuration: TimeInterval = 30, maxFileCount: Int? = nil) {
+	public init(in url: URL, outputType: Recorder.AudioFileType = .m4a, bufferDuration: TimeInterval = 30, ringDuration: TimeInterval? = 30) {
 		self.containerURL = url
-		if let count = maxFileCount {
-			chunkDuration = bufferDuration / TimeInterval(count)
-		} else {
-			chunkDuration = bufferDuration
-		}
-		
 		self.outputType = outputType
-		chunks = ChunkManager(url: url, type: (maxFileCount != nil) ? nil : outputType, limit: maxFileCount)
+		chunks = ChunkManager(url: url, type: outputType, durationLimit: ringDuration, chunkDuration: chunkDuration)
 	}
 
 	public func handle(buffer sampleBuffer: CMSampleBuffer) {
@@ -85,13 +74,17 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	}
 	
 	public func endRecording() async throws -> URL {
-		closeCurrentWriter()
+		await closeCurrentWriter(writer: assetWriter, input: assetWriterInput, url: currentURL)
+		assetWriterInput = nil
+		assetWriter = nil
 		return self.chunks.url
 	}
 	
 	func createWriter(startingAt offset: TimeInterval) throws {
-		closeCurrentWriter()
-		
+		Task { await closeCurrentWriter(writer: assetWriter, input: assetWriterInput, url: currentURL) }
+		assetWriterInput = nil
+		assetWriter = nil
+
 		assetWriterInput = AVAssetWriterInput(mediaType: .audio, outputSettings: internalType.settings)
 		assetWriterInput.expectsMediaDataInRealTime = true
 		
@@ -107,28 +100,22 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		self.currentURL = url
 	}
 	
-	func closeCurrentWriter() {
-		guard let input = assetWriterInput, let writer = assetWriter else { return }
+	func closeCurrentWriter(writer: AVAssetWriter?, input: AVAssetWriterInput?, url: URL?) async {
+		guard let input, let writer else { return }
 		input.markAsFinished()
 
-		if let current = self.currentURL {
-			Task {
-				if writer.status != .completed {
-					writer.finishWriting() {
-						
-					}
-					do {
-						try await self.chunks.didFinishWriting(to: current)
-					} catch {
-						print("Problem finishing the conversion: \(error)")
-					}
+		if let current = url {
+			if writer.status != .completed {
+				writer.finishWriting() {
+					
+				}
+				do {
+					try await self.chunks.didFinishWriting(to: current)
+				} catch {
+					print("Problem finishing the conversion: \(error)")
 				}
 			}
 		}
-
-		assetWriterInput = nil
-		assetWriter = nil
-
 	}
 	
 	enum OutputSegmentedRecordingError: Error { case noRecording, outOfRange }
@@ -168,13 +155,14 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		var type: Recorder.AudioFileType?
 		var chunks: [ChunkInfo] = []
 		var totalChunks = 0
-		var chunkLimit: Int?
-		lazy var exportQueue = DispatchQueue(label: "RingBufferExportQueue", qos: .utility)
+		var durationLimit: TimeInterval?
+		let chunkDuration: TimeInterval
 		
-		init(url: URL, type: Recorder.AudioFileType?, limit: Int?) {
+		init(url: URL, type: Recorder.AudioFileType?, durationLimit: TimeInterval?, chunkDuration: TimeInterval) {
 			self.url = url
 			self.type = type
-			self.chunkLimit = limit
+			self.durationLimit = durationLimit
+			self.chunkDuration = chunkDuration
 			
 			//RecordingStore.instance.addDirectory(url)
 			
@@ -219,6 +207,8 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 			try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
 		}
 		
+		var storedDuration: TimeInterval { TimeInterval(chunks.count) * chunkDuration }
+		
 		func url(startingAt offset: TimeInterval, duration: TimeInterval) -> URL {
 			let parent = url
 			let ext = internalType.fileExtension
@@ -230,9 +220,11 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 			let newURL = parent.appendingPathComponent(name)
 			if let chunk = ChunkInfo(url: newURL) { chunks.append(chunk) }
 			
-			if let limit = chunkLimit, chunks.count > limit {
-				try? FileManager.default.removeItem(at: chunks[0].url)
-				chunks.remove(at: 0)
+			if let durationLimit {
+				while storedDuration > (durationLimit + chunkDuration) {
+					try? FileManager.default.removeItem(at: chunks[0].url)
+					chunks.remove(at: 0)
+				}
 			}
 			return newURL
 		}
