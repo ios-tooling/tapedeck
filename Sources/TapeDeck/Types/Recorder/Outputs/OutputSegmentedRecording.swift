@@ -26,7 +26,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	
 	public var containerURL: URL?
 	
-	public init(in url: URL, outputType: Recorder.AudioFileType = .m4a, bufferDuration: TimeInterval = 30, ringDuration: TimeInterval? = 30) {
+	public init(in url: URL, outputType: Recorder.AudioFileType = .m4a, bufferDuration: TimeInterval = 30, ringDuration: TimeInterval? = nil) {
 		self.containerURL = url
 		self.outputType = outputType
 		chunks = ChunkManager(url: url, type: outputType, durationLimit: ringDuration, chunkDuration: chunkDuration)

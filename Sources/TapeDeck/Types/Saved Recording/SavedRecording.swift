@@ -32,6 +32,9 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		return nil
 	}
 	
+	public var data: Data {
+		try! Data(contentsOf: url)
+	}
 	
 	public var isPackage: Bool { url.pathExtension == RecordingPackage.fileExtension }
 	
