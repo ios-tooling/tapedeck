@@ -81,23 +81,27 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	}
 	
 	func createWriter(startingAt offset: TimeInterval) throws {
-		Task { await closeCurrentWriter(writer: assetWriter, input: assetWriterInput, url: currentURL) }
+		let writer = assetWriter
+		let writerInput = assetWriterInput
+		let url = currentURL
+		
+		Task { await closeCurrentWriter(writer: writer, input: writerInput, url: url) }
 		assetWriterInput = nil
 		assetWriter = nil
 
 		assetWriterInput = AVAssetWriterInput(mediaType: .audio, outputSettings: internalType.settings)
 		assetWriterInput.expectsMediaDataInRealTime = true
 		
-		let url = chunks.url(startingAt: offset, duration: chunkDuration)
+		let nextURL = chunks.url(startingAt: offset, duration: chunkDuration)
 		
 		chunkSamplesRead = 0
-		try? FileManager.default.removeItem(at: url)
-		assetWriter = try AVAssetWriter(outputURL: url, fileType: internalType.fileType)
+		try? FileManager.default.removeItem(at: nextURL)
+		assetWriter = try AVAssetWriter(outputURL: nextURL, fileType: internalType.fileType)
 		assetWriterInput.expectsMediaDataInRealTime = true
 		assetWriter.add(assetWriterInput)
 		assetWriter.startWriting()
 		assetWriter.startSession(atSourceTime: CMTime.zero)
-		self.currentURL = url
+		self.currentURL = nextURL
 	}
 	
 	func closeCurrentWriter(writer: AVAssetWriter?, input: AVAssetWriterInput?, url: URL?) async {
@@ -106,14 +110,12 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 
 		if let current = url {
 			if writer.status != .completed {
-				writer.finishWriting() {
-					
-				}
-				do {
-					try await self.chunks.didFinishWriting(to: current)
-				} catch {
-					print("Problem finishing the conversion: \(error)")
-				}
+				await writer.finishWriting()
+			}
+			do {
+				try await self.chunks.didFinishWriting(to: current)
+			} catch {
+				print("Problem finishing the conversion: \(error)")
 			}
 		}
 	}
