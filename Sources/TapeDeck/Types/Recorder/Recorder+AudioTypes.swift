@@ -49,15 +49,24 @@ extension Recorder {
 			channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
 			
 			let settings: [String: Any] = [
-				AVFormatIDKey: kAudioFormatLinearPCM,
-				AVSampleRateKey: 16000,//AudioFileType.defaultSampleRate,
-				AVLinearPCMBitDepthKey: 16,
-				AVLinearPCMIsFloatKey: false,
+				AVFormatIDKey: Int(kAudioFormatLinearPCM),
+				AVSampleRateKey: 16000.0,
+				AVNumberOfChannelsKey: 1,
 				AVLinearPCMIsBigEndianKey: false,
+				AVLinearPCMIsFloatKey: false,
+				AVLinearPCMBitDepthKey: 16,
 				AVLinearPCMIsNonInterleaved: false,
-				AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
-				AVNumberOfChannelsKey: 2,
-				AVChannelLayoutKey: NSData(bytes: &channelLayout, length: MemoryLayout<AudioChannelLayout>.size)
+//				AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+
+//				AVFormatIDKey: kAudioFormatLinearPCM,
+//				AVSampleRateKey: AudioFileType.defaultSampleRate,
+//				AVLinearPCMBitDepthKey: 16,
+//				AVLinearPCMIsFloatKey: false,
+//				AVLinearPCMIsBigEndianKey: false,
+//				AVLinearPCMIsNonInterleaved: false,
+//			//	AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
+//				AVNumberOfChannelsKey: 2,
+//				AVChannelLayoutKey: NSData(bytes: &channelLayout, length: MemoryLayout<AudioChannelLayout>.size)
 			]
 
 			return AudioFileType(fileExtension: "wav", fileType: .wav, settings: settings)
