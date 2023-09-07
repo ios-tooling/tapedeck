@@ -50,11 +50,12 @@ extension Recorder {
 			
 			let settings: [String: Any] = [
 				AVFormatIDKey: kAudioFormatLinearPCM,
-				AVSampleRateKey: AudioFileType.defaultSampleRate,
+				AVSampleRateKey: 16000,//AudioFileType.defaultSampleRate,
 				AVLinearPCMBitDepthKey: 16,
 				AVLinearPCMIsFloatKey: false,
 				AVLinearPCMIsBigEndianKey: false,
 				AVLinearPCMIsNonInterleaved: false,
+				AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
 				AVNumberOfChannelsKey: 2,
 				AVChannelLayoutKey: NSData(bytes: &channelLayout, length: MemoryLayout<AudioChannelLayout>.size)
 			]
