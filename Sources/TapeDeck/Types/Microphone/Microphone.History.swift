@@ -62,14 +62,23 @@ extension Microphone {
 			let volume: Volume
 		}
 		
+		public func recent(_ count: Int) -> [Volume] {
+			let data = data
+			let length = min(data.count, count)
+			let range = (data.count - length)..<data.count
+			let volumes = Array(data[range]).map { $0.volume }
+			
+			return Array(repeating: Volume.silence, count: count - volumes.count) + volumes
+		}
+		
 		public func data(inLast screenPoints: CGFloat) -> [Volume] {
-            let data = data
+				let data = data
 			if data.isEmpty { return [] }
 			let startIndex = Swift.max(0, data.count - Int(screenPoints))
 			
 			return Array(data[startIndex..<data.count]).map { $0.volume }
 		}
-		
+
 		public func data(inLast seconds: TimeInterval) -> [Volume] {
 			let duration = self.duration
 			if duration > seconds {

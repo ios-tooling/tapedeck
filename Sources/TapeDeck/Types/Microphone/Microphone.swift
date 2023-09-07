@@ -20,7 +20,7 @@ import Suite
 	private var isPausedDueToInterruption = false
 	private var interruptCount = 0
 
-	public var pollingInterval: Frequency = 10 { didSet { self.setupTimer() }}
+	public var pollingInterval: Frequency = 100 { didSet { self.setupTimer() }}
 	@Published public private(set) var isListening = false
 
 	public struct Notifications {
@@ -38,7 +38,7 @@ import Suite
 		AVAudioSession.interruptionNotification.publisher()
 			.receive(on: RunLoop.main)
 			.sink { note in
-				self.handleInterruption(note: note)
+				//self.handleInterruption(note: note)
 			}.store(in: &cancelBag)
 	}
 
@@ -86,7 +86,7 @@ import Suite
 	func setActive(_ listener: MicrophoneListener) async throws {
 		if activeListener === listener { return }
 		
-		if let active = activeListener {
+		if let active = activeListener, active !== self {
 			try await active.stop()
 			listenerStack.append(active)
 		}
@@ -133,9 +133,7 @@ import Suite
 		//self.history.reset()
 		
 		do {
-			setupSession()
-			try self.recordingSession.setCategory(.playAndRecord, options: [.allowBluetoothA2DP, .allowAirPlay, .defaultToSpeaker, .duckOthers])
-			try self.recordingSession.setActive(true)
+			try setupSession()
 		} catch {
 			logg("Error when starting the recorder: \((error as NSError).code.characterCode) \(error.localizedDescription)")
 			return false
@@ -157,10 +155,10 @@ import Suite
 		return false
 	}
 	
-	func setupSession() {
+	func setupSession() throws {
 		let audioSession = AVAudioSession.sharedInstance()
-		try? audioSession.setCategory(.playAndRecord, options: [.allowBluetoothA2DP, .allowAirPlay, .defaultToSpeaker, .duckOthers])
-		try? audioSession.setActive(true)
+		try audioSession.setCategory(.playAndRecord, options: [.allowBluetoothA2DP, .allowAirPlay, .defaultToSpeaker, .duckOthers])
+		try audioSession.setActive(true)
 	}
 	
 	var startedAt: TimeInterval = 0
@@ -185,12 +183,12 @@ import Suite
 	}
 	
 	func updateLevels() {
-		guard isListening, audioRecorder.isRecording else { return }
+		guard isListening else { return }
 		audioRecorder.updateMeters()
 		
 		let avgFullScale = audioRecorder.averagePower(forChannel: 0)
 		let environmentDBAvgSPL = Volume(detectedRoomVolume: Double(avgFullScale)) ?? .silence
-		
+	
 		self.history.record(volume: environmentDBAvgSPL)
 	}
 	
