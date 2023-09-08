@@ -10,93 +10,69 @@ import AVFoundation
 
 extension AudioFileConverter {
 	public static func convert(m4a url: URL, toWAV outputWAV: URL?, deleteSource: Bool = false) async throws {
-		var error : OSStatus = noErr
-		var destinationFile : ExtAudioFileRef? = nil
-		var sourceFile : ExtAudioFileRef? = nil
+		var error: OSStatus = noErr
+		var destinationFile: ExtAudioFileRef?
+		var sourceFile: ExtAudioFileRef?
 		let outputURL = outputWAV ?? url.deletingPathExtension().appendingPathExtension("wav")
 
-		var srcFormat : AudioStreamBasicDescription = AudioStreamBasicDescription()
-		var dstFormat : AudioStreamBasicDescription = AudioStreamBasicDescription()
+		var srcFormat = AudioStreamBasicDescription()
+		var dstFormat = AudioStreamBasicDescription()
 		
 		ExtAudioFileOpenURL(url as CFURL, &sourceFile)
-		
+		guard let sourceFile else { throw ConversionError.failedtoCreateSourceFile }
+
 		var thePropertySize: UInt32 = UInt32(MemoryLayout.stride(ofValue: srcFormat))
 		
-		ExtAudioFileGetProperty(sourceFile!,
-										kExtAudioFileProperty_FileDataFormat,
-										&thePropertySize, &srcFormat)
+		ExtAudioFileGetProperty(sourceFile, kExtAudioFileProperty_FileDataFormat, &thePropertySize, &srcFormat)
 		
-		dstFormat.mSampleRate = 16000.0  //Set sample rate
+		dstFormat.mSampleRate = 16000.0
 		dstFormat.mFormatID = kAudioFormatLinearPCM
 		dstFormat.mChannelsPerFrame = 1
 		dstFormat.mBitsPerChannel = 16
 		dstFormat.mBytesPerPacket = 2 * dstFormat.mChannelsPerFrame
 		dstFormat.mBytesPerFrame = 2 * dstFormat.mChannelsPerFrame
 		dstFormat.mFramesPerPacket = 1
-		dstFormat.mFormatFlags = kLinearPCMFormatFlagIsPacked |
-		kAudioFormatFlagIsSignedInteger
-		
+		dstFormat.mFormatFlags = kLinearPCMFormatFlagIsPacked | kAudioFormatFlagIsSignedInteger
 		
 		// Create destination file
-		error = ExtAudioFileCreateWithURL(
-			outputURL as CFURL,
-			kAudioFileWAVEType,
-			&dstFormat,
-			nil,
-			AudioFileFlags.eraseFile.rawValue,
-			&destinationFile)
+		error = ExtAudioFileCreateWithURL(outputURL as CFURL, kAudioFileWAVEType, &dstFormat, nil, AudioFileFlags.eraseFile.rawValue, &destinationFile)
+		if error != 0 { throw ConversionError.OSError(error) }
+		guard let destinationFile else { throw ConversionError.failedtoCreateExportFile }
 		
+		error = ExtAudioFileSetProperty(sourceFile, kExtAudioFileProperty_ClientDataFormat, thePropertySize, &dstFormat)
 		if error != 0 { throw ConversionError.OSError(error) }
 		
-		error = ExtAudioFileSetProperty(sourceFile!,
-												  kExtAudioFileProperty_ClientDataFormat,
-												  thePropertySize,
-												  &dstFormat)
+		error = ExtAudioFileSetProperty(destinationFile, kExtAudioFileProperty_ClientDataFormat, thePropertySize, &dstFormat)
 		if error != 0 { throw ConversionError.OSError(error) }
 		
-		error = ExtAudioFileSetProperty(destinationFile!,
-												  kExtAudioFileProperty_ClientDataFormat,
-												  thePropertySize,
-												  &dstFormat)
-		if error != 0 { throw ConversionError.OSError(error) }
+		let bufferLength: UInt32 = 32768
+		var sourceFrameOffset: UInt32 = 0
+		let buffer = UnsafeMutableRawPointer.allocate(byteCount: Int(bufferLength), alignment: 8)
 		
-		let bufferByteSize : UInt32 = 32768
-		var srcBuffer = [UInt8](repeating: 0, count: 32768)
-		var sourceFrameOffset : ULONG = 0
-		
-		while(true){
-			var fillBufList = AudioBufferList(
-				mNumberBuffers: 1,
-				mBuffers: AudioBuffer(
-					mNumberChannels: 2,
-					mDataByteSize: UInt32(srcBuffer.count),
-					mData: &srcBuffer
-				)
-			)
-			var numFrames : UInt32 = 0
+		while true {
+			let audioBuffer = AudioBuffer(mNumberChannels: 2, mDataByteSize: bufferLength, mData: buffer)
+			var fillBufList = AudioBufferList(mNumberBuffers: 1, mBuffers: audioBuffer)
+			var numFrames: UInt32 = 0
 			
-			if(dstFormat.mBytesPerFrame > 0){
-				numFrames = bufferByteSize / dstFormat.mBytesPerFrame
-			}
+			if dstFormat.mBytesPerFrame > 0 { numFrames = bufferLength / dstFormat.mBytesPerFrame }
 			
-			error = ExtAudioFileRead(sourceFile!, &numFrames, &fillBufList)
+			error = ExtAudioFileRead(sourceFile, &numFrames, &fillBufList)
 			if error != 0 { throw ConversionError.OSError(error) }
 			
-			if(numFrames == 0){
+			if numFrames == 0 {
 				error = noErr;
 				break;
 			}
 			
 			sourceFrameOffset += numFrames
-			error = ExtAudioFileWrite(destinationFile!, numFrames, &fillBufList)
+			error = ExtAudioFileWrite(destinationFile, numFrames, &fillBufList)
 			if error != 0 { throw ConversionError.OSError(error) }
 		}
 		
-		error = ExtAudioFileDispose(destinationFile!)
+		error = ExtAudioFileDispose(destinationFile)
 		if error != 0 { throw ConversionError.OSError(error) }
-		error = ExtAudioFileDispose(sourceFile!)
+		error = ExtAudioFileDispose(sourceFile)
 		if error != 0 { throw ConversionError.OSError(error) }
 		if deleteSource { try? FileManager.default.removeItem(at: url) }
 	}
-	
 }

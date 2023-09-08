@@ -11,7 +11,7 @@ import Combine
 import Suite
 
 public class AudioFileConverter: NSObject {
-	enum ConversionError: Error { case noInput, outputTypeNotSupported, failedtoCreateExportSesssion, OSError(Int32) }
+	enum ConversionError: Error { case noInput, outputTypeNotSupported, failedtoCreateExportSesssion, failedtoCreateExportFile, failedtoCreateSourceFile, OSError(Int32) }
 	
 	private let queue = DispatchQueue(label: "audioFileConverter", qos: .userInitiated)
 	
