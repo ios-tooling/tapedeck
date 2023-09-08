@@ -51,13 +51,13 @@ public class AudioFileConverter: NSObject {
 		logg(error: nil, "interrupted")
 	}
 	
-	public func convert() async throws -> URL {
+	@discardableResult public func convert() async throws -> URL {
 		for source in sources {
 			guard let exportSession = AVAssetExportSession(asset: AVAsset(url: source), presetName: AVAssetExportPresetAppleM4A) else {
 				throw ConversionError.failedtoCreateExportSesssion
 			}
 			
-			exportSession.outputFileType = .m4a
+			exportSession.outputFileType = outputFormat.fileType
 			exportSession.outputURL = destination
 			
 			await exportSession.export()

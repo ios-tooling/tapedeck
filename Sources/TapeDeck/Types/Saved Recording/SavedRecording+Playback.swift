@@ -69,7 +69,7 @@ extension SavedRecording {
 
 		state = .playing
 		if isPackage {
-			guard let segmentInfo else { return }
+			guard !segmentInfo.isEmpty else { return }
 			playSegments(segments: segmentInfo) {
 				self.stopPlayback()
 			}

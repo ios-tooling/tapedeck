@@ -21,7 +21,7 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	
 	public enum State { case preparing, ready, playing }
 	
-	var segmentInfo: [SegmentPlaybackInfo]?
+	var segmentInfo: [SegmentPlaybackInfo] = []
 	var currentSegmentIndex = 0
 	weak var playbackTimer: Timer?
 	public var playbackStartedAt: Date?
@@ -30,10 +30,6 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		if let playbackStartedAt { return Date().timeIntervalSince(playbackStartedAt) }
 		if isActive { return Date().timeIntervalSince(startedAt) }
 		return nil
-	}
-	
-	public var data: Data {
-		try! Data(contentsOf: url)
 	}
 	
 	public var isPackage: Bool { url.pathExtension == RecordingPackage.fileExtension }
@@ -63,7 +59,7 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		do {
 			state = .preparing
 			segmentInfo = try buildSegmentPlaybackInfo()
-			duration = segmentInfo?.map { $0.duration }.sum()
+			duration = segmentInfo.map { $0.duration }.sum()
 			state = .ready
 		} catch {
 			print("Failed to load segments: \(error)")
