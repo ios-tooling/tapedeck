@@ -10,7 +10,7 @@ import AVFoundation
 import Suite
 
 public extension RecordingStore {
-	func startRecording(at target: URL? = nil, segmented: Bool = true) async throws {
+	func startRecording(at target: URL? = nil, segmented: Bool = true, bufferDuration: TimeInterval = 30) async throws {
 		var url = target ?? newRecordingURL()
 		//let new = Recording.new(at: url)
 		
@@ -18,7 +18,7 @@ public extension RecordingStore {
 		
 		if segmented {
 			url = url.appendingPathExtension(RecordingPackage.fileExtension)
-			output = OutputSegmentedRecording(in: url, bufferDuration: 1)
+			output = OutputSegmentedRecording(in: url, bufferDuration: bufferDuration)
 		} else{
 			url = url.appendingPathExtension("m4a")
 			output = OutputSingleFileRecording(url: url, type: .m4a)
