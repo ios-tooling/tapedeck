@@ -7,6 +7,6 @@
 
 import Foundation
 
-public struct Transcription: Codable {
+public struct SpeechTranscription: Codable {
 	
 }

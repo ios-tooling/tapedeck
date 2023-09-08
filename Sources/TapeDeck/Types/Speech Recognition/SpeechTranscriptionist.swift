@@ -9,8 +9,8 @@ import Foundation
 import AVFoundation
 import Speech
 
-public class Transcriptionist: NSObject, ObservableObject {
-	public static let instance = Transcriptionist()
+public class SpeechTranscriptionist: NSObject, ObservableObject {
+	public static let instance = SpeechTranscriptionist()
 	
 	private let audioEngine = AVAudioEngine()
 	private var inputNode: AVAudioNode?
@@ -21,7 +21,7 @@ public class Transcriptionist: NSObject, ObservableObject {
 	var textCallback: ((String) -> Void)?
 	var observationToken: Any?
 	
-	@Published public var currentTranscription = Transcription()
+	@Published public var currentTranscription = SpeechTranscription()
 
 	var isRunning = false
 
@@ -47,7 +47,7 @@ public class Transcriptionist: NSObject, ObservableObject {
 		inputNode = audioEngine.inputNode
 		
 		self.fullTranscript = ""
-		self.currentTranscription = Transcription()
+		self.currentTranscription = SpeechTranscription()
 		recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
 		guard let recognitionRequest = recognitionRequest else { throw Recorder.RecorderError.unableToCreateRecognitionRequest }
 	//	recognitionRequest.shouldReportPartialResults = true
@@ -127,7 +127,7 @@ public class Transcriptionist: NSObject, ObservableObject {
 }
 
 
-extension Transcriptionist: SFSpeechRecognitionTaskDelegate {
+extension SpeechTranscriptionist: SFSpeechRecognitionTaskDelegate {
 	public func speechRecognitionDidDetectSpeech(_ task: SFSpeechRecognitionTask) {
 		print("Detected speech")
 	}
@@ -150,7 +150,7 @@ extension Transcriptionist: SFSpeechRecognitionTaskDelegate {
 	}
 }
 
-extension Transcriptionist: SFSpeechRecognizerDelegate {
+extension SpeechTranscriptionist: SFSpeechRecognizerDelegate {
 	public func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
 		print("Speech recognizer availability changed to \(available)")
 	}

@@ -20,7 +20,9 @@ extension Recorder {
 	
 		var formatID: AudioFormatID?
 		var outputID: AudioFormatID?
-		
+
+		var sampleRate: Int
+
 		func url(from url: URL) -> URL {
 			url.deletingPathExtension().appendingPathExtension(fileExtension)
 		}
@@ -41,7 +43,7 @@ extension Recorder {
 				AVChannelLayoutKey: NSData(bytes: &channelLayout, length: MemoryLayout<AudioChannelLayout>.size)
 			]
 
-			return AudioFileType(fileExtension: "m4a", fileType: .m4a, settings: settings, formatID: kAudioFormatMPEG4AAC, outputID: kAudioFileM4AType)
+			return AudioFileType(fileExtension: "m4a", fileType: .m4a, settings: settings, formatID: kAudioFormatMPEG4AAC, outputID: kAudioFileM4AType, sampleRate: AudioFileType.defaultSampleRate)
 		}()
 		
 		public static var wav: AudioFileType = {
@@ -69,7 +71,7 @@ extension Recorder {
 //				AVChannelLayoutKey: NSData(bytes: &channelLayout, length: MemoryLayout<AudioChannelLayout>.size)
 			]
 
-			return AudioFileType(fileExtension: "wav", fileType: .wav, settings: settings)
+			return AudioFileType(fileExtension: "wav", fileType: .wav, settings: settings, sampleRate: 16_000)
 		}()
 
 		public static var mp3: AudioFileType = {
@@ -87,7 +89,7 @@ extension Recorder {
 				AVChannelLayoutKey: NSData(bytes: &channelLayout, length: MemoryLayout<AudioChannelLayout>.size)
 			]
 
-			return AudioFileType(fileExtension: "mp3", fileType: .mp3, settings: settings)
+			return AudioFileType(fileExtension: "mp3", fileType: .mp3, settings: settings, sampleRate: AudioFileType.defaultSampleRate)
 		}()
 	}
 }

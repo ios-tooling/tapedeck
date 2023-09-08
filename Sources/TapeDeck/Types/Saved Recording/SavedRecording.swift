@@ -21,7 +21,7 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	
 	public enum State { case preparing, ready, playing }
 	
-	var segmentInfo: [SegmentPlaybackInfo] = []
+	var transcript: Transcript!
 	var currentSegmentIndex = 0
 	weak var playbackTimer: Timer?
 	public var playbackStartedAt: Date?
@@ -58,8 +58,8 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	func loadSegments() async {
 		do {
 			state = .preparing
-			segmentInfo = try buildSegmentPlaybackInfo()
-			duration = segmentInfo.map { $0.duration }.sum()
+			transcript = try Transcript.load(in: url)
+			duration = transcript.duration
 			state = .ready
 		} catch {
 			print("Failed to load segments: \(error)")

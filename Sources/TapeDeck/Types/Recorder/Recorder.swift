@@ -21,6 +21,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	
 	public var state = State.idle { didSet { objectWillChange.sendOnMain() }}
 	public var recordingDuration: TimeInterval = 0 { didSet { objectWillChange.sendOnMain() }}
+	public var activeTranscript: Transcript?
 	
 	let session: AVCaptureSession = AVCaptureSession()
 	let queue = DispatchQueue(label: "\(Recorder.self)", qos: .userInitiated, attributes: [], autoreleaseFrequency: .inherit, target: nil)
@@ -89,6 +90,9 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		try await Microphone.instance.setActive(self)
 		state = .running
 		
+		activeTranscript = Transcript()
+		activeTranscript?.beginTranscribing()
+
 		RecordingStore.instance.didStartRecording()
 	}
 	
@@ -107,6 +111,8 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	}
 	
 	@MainActor public func stop() async throws {
+		activeTranscript?.endTranscribing()
+		activeTranscript?.save(forOutputURL: output?.containerURL)
 		Microphone.instance.clearActive(self)
 		if state == .idle { return }
 

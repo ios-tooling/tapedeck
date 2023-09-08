@@ -25,7 +25,7 @@ public extension SavedRecording {
 	
 	var fileURLs: [URL] {
 		if isPackage {
-			return segmentInfo.map { $0.url(basedOn: url) }
+			return transcript.segments.map { $0.url(basedOn: url) }
 		} else {
 			return [url]
 		}

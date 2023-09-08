@@ -30,14 +30,6 @@ struct SegmentPlaybackInfo: Comparable {
 }
 
 extension SavedRecording {
-	func buildSegmentPlaybackInfo() throws -> [SegmentPlaybackInfo] {
-		var results: [SegmentPlaybackInfo] = []
-		let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
-		results = urls.compactMap { SegmentPlaybackInfo(url: $0) }
-		
-		return results.sorted()
-	}
-	
 	func play(url: URL, duration: TimeInterval?, completion: @escaping () -> Void) {
 		playbackTimer?.invalidate()
 		
@@ -51,7 +43,7 @@ extension SavedRecording {
 		}
 	}
 	
-	func playSegments(segments: [SegmentPlaybackInfo], completion: @escaping () -> Void) {
+	func playSegments(segments: [Transcript.Segment], completion: @escaping () -> Void) {
 		RecordingPlayer.instance.player.pause()
 		RecordingPlayer.instance.queuePlayer.pause()
 		RecordingPlayer.instance.queuePlayer = AVQueuePlayer(items: segments.map { $0.playerItem(basedOn: url) })
@@ -69,8 +61,8 @@ extension SavedRecording {
 
 		state = .playing
 		if isPackage {
-			guard !segmentInfo.isEmpty else { return }
-			playSegments(segments: segmentInfo) {
+			guard !transcript.isEmpty else { return }
+			playSegments(segments: transcript.segments) {
 				self.stopPlayback()
 			}
 		} else {

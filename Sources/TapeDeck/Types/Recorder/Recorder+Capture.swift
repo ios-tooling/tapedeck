@@ -19,7 +19,7 @@ extension Recorder {
 	@MainActor func capture(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
 		guard state == .running, let output = self.output else { return }
 		output.handle(buffer: sampleBuffer)
-		let threshold = 44100 / 30
+		let threshold = outputType.sampleRate / 30
 		
 		if let avg = sampleBuffer.dataBuffer?.average {
 			currentAverage += avg * Float(sampleBuffer.numSamples)
@@ -38,6 +38,7 @@ extension Recorder {
 				}
 				
 				Microphone.instance.history.record(volume: environmentDBAvgSPL)
+				activeTranscript?.recordSoundLevel(environmentDBAvgSPL)
 				currentAverage = 0
 				currentCount = 0
 			}

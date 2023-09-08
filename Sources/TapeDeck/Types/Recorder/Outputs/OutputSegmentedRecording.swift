@@ -22,6 +22,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	var outputType = Recorder.AudioFileType.m4a
 	var internalType = Recorder.AudioFileType.wav
 	var currentURL: URL?
+	var segmentStartedAt: TimeInterval = 0
 	let queue = DispatchQueue(label: "segmented.recording", qos: .userInitiated)
 	
 	public var containerURL: URL?
@@ -85,6 +86,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		let writer = assetWriter
 		let writerInput = assetWriterInput
 		let url = currentURL
+		segmentStartedAt = offset
 		
 		Task { await closeCurrentWriter(writer: writer, input: writerInput, url: url) }
 		assetWriterInput = nil
@@ -110,6 +112,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		input.markAsFinished()
 
 		if let current = url {
+			Recorder.instance.activeTranscript?.addSegment(start: segmentStartedAt, filename: current.deletingPathExtension().lastPathComponent, samples: 0)
 			if writer.status != .completed {
 				await writer.finishWriting()
 			}
