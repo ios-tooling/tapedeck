@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  AudioFileConverter+wav.swift
 //
 //
 //  Created by Ben Gottlieb on 9/7/23.
@@ -9,11 +9,12 @@ import Foundation
 import AVFoundation
 
 extension AudioFileConverter {
-	public static func convert(m4a url: URL, toWAV outputURL: URL) throws {
+	public static func convert(m4a url: URL, toWAV outputWAV: URL?, deleteSource: Bool = false) async throws {
 		var error : OSStatus = noErr
 		var destinationFile : ExtAudioFileRef? = nil
 		var sourceFile : ExtAudioFileRef? = nil
-		
+		let outputURL = outputWAV ?? url.deletingPathExtension().appendingPathExtension("wav")
+
 		var srcFormat : AudioStreamBasicDescription = AudioStreamBasicDescription()
 		var dstFormat : AudioStreamBasicDescription = AudioStreamBasicDescription()
 		
@@ -95,6 +96,7 @@ extension AudioFileConverter {
 		if error != 0 { throw ConversionError.OSError(error) }
 		error = ExtAudioFileDispose(sourceFile!)
 		if error != 0 { throw ConversionError.OSError(error) }
+		if deleteSource { try? FileManager.default.removeItem(at: url) }
 	}
 	
 }

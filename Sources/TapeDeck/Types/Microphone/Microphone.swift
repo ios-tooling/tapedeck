@@ -109,7 +109,9 @@ import Suite
 
 	public var hasRecordingPermissions = CurrentValueSubject<Bool, Never>(AVAudioSession.sharedInstance().recordPermission == .granted)
 	public func requestRecordingPermissions() async -> Bool {
-		await withCheckedContinuation { continuation in
+		if Gestalt.isOnSimulator { return false }
+
+		return await withCheckedContinuation { continuation in
 			recordingSession.requestRecordPermission { granted in
 				self.hasRecordingPermissions.send(granted)
 				continuation.resume(returning: granted)

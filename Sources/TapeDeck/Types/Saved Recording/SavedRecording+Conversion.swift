@@ -11,9 +11,14 @@ public extension SavedRecording {
 	var data: Data? {
 		get async {
 			if isPackage {
-				return fileURLs.compactMap { url in url.wavData }.reduce(.init(), +)
+				var result = Data()
+				
+				for url in fileURLs {
+					if let chunk = await url.wavData { result += chunk }
+				}
+				return result
 			} else {
-				return url.wavData
+				return await url.wavData
 			}
 		}
 	}
@@ -29,18 +34,20 @@ public extension SavedRecording {
 
 extension URL {
 	var wavData: Data? {
-		if pathExtension.lowercased() == "wav" {
-			return try? Data(contentsOf: self)
-		} else {
-			let temp = URL.tempFile(named: lastPathComponent)
-			try? FileManager.default.removeItem(at: temp)
-			
-			do {
-				try AudioFileConverter.convert(m4a: self, toWAV: temp)
-				return try? Data(contentsOf: temp)
-			} catch {
-				print("Failed to convert file \(lastPathComponent): \(error)")
-				return nil
+		get async {
+			if pathExtension.lowercased() == "wav" {
+				return try? Data(contentsOf: self)
+			} else {
+				let temp = URL.tempFile(named: lastPathComponent)
+				try? FileManager.default.removeItem(at: temp)
+				
+				do {
+					try await AudioFileConverter.convert(m4a: self, toWAV: temp)
+					return try? Data(contentsOf: temp)
+				} catch {
+					print("Failed to convert file \(lastPathComponent): \(error)")
+					return nil
+				}
 			}
 		}
 	}
