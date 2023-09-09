@@ -28,6 +28,7 @@ extension Microphone {
 		
 		var dbRange: Range<Double> { currentMinVolume.db..<maxVolume.db }
 		var startedAt = Date()
+		var isEmpty: Bool { data.isEmpty }
 		
 		public var duration: TimeInterval { abs(startedAt.timeIntervalSinceNow) }
 		

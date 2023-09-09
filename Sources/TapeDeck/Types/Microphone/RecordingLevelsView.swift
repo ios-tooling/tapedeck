@@ -9,19 +9,21 @@ import SwiftUI
 
 public struct RecordingLevelsView: View {
 	let samples: [Transcript.SoundLevel]
+	let bottomAligned: Bool
 	
-	public init(resolution: Int = 300, recording: SavedRecording, recent: Bool = false) {
+	public init(resolution: Int = 300, recording: SavedRecording, recent: Bool = false, bottomAligned: Bool = false) {
 		if recent {
 			samples = recording.transcript?.soundLevels.suffix(resolution) ?? []
 		} else {
 			samples = recording.transcript?.soundLevels.downSampled(to: resolution) ?? []
 		}
+		self.bottomAligned = bottomAligned
 	}
 	
 	public var body: some View {
 		HStack(spacing: 0) {
 			ForEach(samples.indices, id: \.self) { idx in
-				Bar(volume: samples[idx].level)
+				Bar(volume: samples[idx].level, bottomAligned: bottomAligned)
 			}
 			Spacer()
 		}
@@ -29,6 +31,7 @@ public struct RecordingLevelsView: View {
 	
 	struct Bar: View {
 		let volume: Double
+		let bottomAligned: Bool
 		
 		var body: some View {
 			ZStack {
@@ -43,9 +46,8 @@ public struct RecordingLevelsView: View {
 							.fill(Color.red)
 							.frame(height: geo.height * pow(volume, 4))
 
-						Spacer(minLength: 0)
+						if !bottomAligned { Spacer(minLength: 0) }
 					}
-					//.background(Color.green)
 				}
 			)
 			.frame(maxWidth: 2)

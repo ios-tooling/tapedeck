@@ -20,7 +20,7 @@ import Suite
 	private var isPausedDueToInterruption = false
 	private var interruptCount = 0
 
-	public var pollingInterval: Frequency = 100 { didSet { self.setupTimer() }}
+	public var pollingInterval: Frequency = 10 { didSet { self.setupTimer() }}
 	@Published public private(set) var isListening = false
 
 	public struct Notifications {
@@ -168,7 +168,7 @@ import Suite
 	func setupTimer() {
 		if !isListening { return }
 		pollingTimer?.invalidate()
-		pollingTimer = Timer.scheduledTimer(withTimeInterval: pollingInterval.timeInterval, repeats: true) { _ in
+		pollingTimer = Timer.nonPausingTimer(withTimeInterval: pollingInterval.timeInterval) { _ in
 			Task { @MainActor in self.updateLevels() }
 		}
 
