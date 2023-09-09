@@ -57,7 +57,6 @@ public struct SoundLevelsView: View {
 
 						if !bottomAligned { Spacer(minLength: 0) }
 					}
-					//.background(Color.green)
 				}
 			)
 		}

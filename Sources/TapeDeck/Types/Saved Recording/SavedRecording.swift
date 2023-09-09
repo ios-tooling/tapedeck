@@ -25,6 +25,11 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	var currentSegmentIndex = 0
 	weak var playbackTimer: Timer?
 	public var playbackStartedAt: Date?
+	public var playbackProgress: Double? {
+		guard let playbackStartedAt, let duration else { return nil }
+		
+		return (Date().timeIntervalSince(playbackStartedAt) / duration)
+	}
 	
 	public var runningDuration: TimeInterval? {
 		if let playbackStartedAt { return Date().timeIntervalSince(playbackStartedAt) }
