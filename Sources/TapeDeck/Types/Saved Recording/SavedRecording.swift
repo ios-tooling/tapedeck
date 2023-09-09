@@ -66,13 +66,14 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		}
 	}
 	
-	init(url: URL) {
+	init(url: URL, transcript: Transcript? = nil) {
 		self.url = url
+		self.transcript = transcript
 		
 		startedAt = url.createdAt ?? startedAt
 		if isPackage {
 			Task {
-				await loadSegments()
+				if transcript == nil { await loadSegments() }
 				objectWillChange.sendOnMain()
 			}
 		} else {

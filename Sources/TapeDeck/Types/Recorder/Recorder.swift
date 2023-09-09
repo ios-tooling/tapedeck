@@ -93,7 +93,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		activeTranscript = Transcript()
 		activeTranscript?.beginTranscribing()
 
-		RecordingStore.instance.didStartRecording()
+		RecordingStore.instance.didStartRecording(to: output)
 	}
 	
 	@MainActor public func pause() async throws {

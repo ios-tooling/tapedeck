@@ -80,8 +80,11 @@ public class RecordingStore: ObservableObject {
 		self.updateRecordings()
 	}
 	
-	func didStartRecording() {
-		updateRecordings()
+	func didStartRecording(to output: RecorderOutput?) {
+		if let url = output?.containerURL {
+			replace(SavedRecording(url: url, transcript: Recorder.instance.activeTranscript))
+		}
+		self.objectWillChange.sendOnMain()
 		RecordingStore.Notifications.didStartRecording.notify()
 	}
 	
@@ -90,9 +93,6 @@ public class RecordingStore: ObservableObject {
 	}
 	
 	func didFinishPostRecording(to output: RecorderOutput?) {
-		if let url = output?.containerURL {
-			replace(SavedRecording(url: url))
-		}
 		objectWillChange.sendOnMain()
 		RecordingStore.Notifications.didEndPostRecording.notify()
 	}
