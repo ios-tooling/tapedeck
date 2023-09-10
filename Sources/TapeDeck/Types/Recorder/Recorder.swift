@@ -49,6 +49,11 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	
 	public var isRecording: Bool { state == .running || state == .paused }
 	
+	public var wallClockDuration: TimeInterval {
+		guard let startedAt else { return 0 }
+		return Date().timeIntervalSince(startedAt)
+	}
+	
 	public var duration: TimeInterval {
 		return Double(totalSamplesReceived) / Double(samplingRate)
 	}
@@ -80,6 +85,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 			addSamplesHandler(output)
 			try await output.prepareToRecord()
 		}
+		
 		if session.outputs.isEmpty {
 			audioOutput.setSampleBufferDelegate(self, queue: queue)
 			guard session.canAddOutput(audioOutput) else { throw RecorderError.unableToAddOutput }
@@ -125,7 +131,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		Microphone.instance.clearActive(self)
 		if state == .idle { return }
 
-		try AVAudioSessionWrapper.instance.stop()
+		try? AVAudioSessionWrapper.instance.stop()
 		RecordingStore.instance.didEndRecording(to: output)
 		state = .post
 		removeSamplesHandler(output)
