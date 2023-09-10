@@ -19,6 +19,8 @@ extension Recorder {
 	@MainActor func capture(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
 		guard state == .running else { return }
 		
+		totalSamplesReceived += Int64(sampleBuffer.numSamples)
+
 		for handler in handlers {
 			handler.handle(buffer: sampleBuffer)
 		}

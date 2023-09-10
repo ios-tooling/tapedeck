@@ -107,18 +107,6 @@ import Suite
 		}
 	}
 
-	public var hasRecordingPermissions = CurrentValueSubject<Bool, Never>(AVAudioSession.sharedInstance().recordPermission == .granted)
-	public func requestRecordingPermissions() async -> Bool {
-		if Gestalt.isOnSimulator { return false }
-
-		return await withCheckedContinuation { continuation in
-			recordingSession.requestRecordPermission { granted in
-				self.hasRecordingPermissions.send(granted)
-				continuation.resume(returning: granted)
-			}
-		}
-	}
-
 	@discardableResult
 	public func start() async throws -> Bool {
 		isPausedDueToInterruption = false
@@ -127,15 +115,12 @@ import Suite
 			return true
 		}
 		
-		if !hasRecordingPermissions.value {
-			if await !requestRecordingPermissions() { return false }
-			
-		}
+		if await !AVAudioSessionWrapper.instance.requestRecordingPermissions() { return false }
 
 		//self.history.reset()
 		
 		do {
-			try setupSession()
+			try AVAudioSessionWrapper.instance.start()
 		} catch {
 			logg("Error when starting the recorder: \((error as NSError).code.characterCode) \(error.localizedDescription)")
 			return false
@@ -155,12 +140,6 @@ import Suite
 		}
 		
 		return false
-	}
-	
-	func setupSession() throws {
-		let audioSession = AVAudioSession.sharedInstance()
-		try audioSession.setCategory(.playAndRecord, options: [.allowBluetoothA2DP, .allowAirPlay, .defaultToSpeaker, .duckOthers])
-		try audioSession.setActive(true)
 	}
 	
 	var startedAt: TimeInterval = 0

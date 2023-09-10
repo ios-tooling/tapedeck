@@ -39,6 +39,8 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	var currentAverage: Float = 0.0
 	var currentCount = 0
 	var max: Double = 0
+	var samplingRate = 44_100
+	var totalSamplesReceived: Int64 = 0
 
 	override init() {
 		super.init()
@@ -47,9 +49,8 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	
 	public var isRecording: Bool { state == .running || state == .paused }
 	
-	public var duration: TimeInterval? {
-		guard let startedAt else { return nil }
-		return Date().timeIntervalSince(startedAt)
+	public var duration: TimeInterval {
+		return Double(totalSamplesReceived) / Double(samplingRate)
 	}
 	
 	func start() async throws -> Bool {
@@ -72,6 +73,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 			return
 		}
 		
+		try AVAudioSessionWrapper.instance.start()
 		if state == .idle {
 			startedAt = Date()
 			self.output = output
@@ -123,6 +125,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		Microphone.instance.clearActive(self)
 		if state == .idle { return }
 
+		try AVAudioSessionWrapper.instance.stop()
 		RecordingStore.instance.didEndRecording(to: output)
 		state = .post
 		removeSamplesHandler(output)
