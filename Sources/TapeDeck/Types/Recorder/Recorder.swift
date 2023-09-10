@@ -34,6 +34,12 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	var cancelBag: Set<AnyCancellable> = []
 	var isPausedDueToInterruption = false
 	var interruptCount = 0
+	var handlers: [SamplesHandler] = []
+	
+	var currentAverage: Float = 0.0
+	var currentCount = 0
+	var max: Double = 0
+
 	override init() {
 		super.init()
 		setupInterruptions()
@@ -69,6 +75,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		if state == .idle {
 			startedAt = Date()
 			self.output = output
+			addSamplesHandler(output)
 			try await output.prepareToRecord()
 		}
 		if session.outputs.isEmpty {
@@ -118,6 +125,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 
 		RecordingStore.instance.didEndRecording(to: output)
 		state = .post
+		removeSamplesHandler(output)
 
 		do {
 			_ = try await output?.endRecording()
@@ -130,7 +138,16 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		RecordingStore.instance.didFinishPostRecording(to: output)
 	}
 	
-	var currentAverage: Float = 0.0
-	var currentCount = 0
-	var max: Double = 0
+	public func addSamplesHandler(_ handler: SamplesHandler) {
+		if !handlers.contains(where: { $0 === handler}) {
+			handlers.append(handler)
+		}
+	}
+	
+	public func removeSamplesHandler(_ handler: SamplesHandler?) {
+		if let index = handlers.firstIndex(where: { $0 === output }) {
+			handlers.remove(at: index)
+		}
+	}
+	
 }

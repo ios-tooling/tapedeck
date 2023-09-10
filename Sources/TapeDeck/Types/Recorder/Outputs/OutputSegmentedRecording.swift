@@ -75,11 +75,10 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		try self.createWriter(startingAt: 0)
 	}
 	
-	public func endRecording() async throws -> URL {
+	public func endRecording() async throws {
 		await closeCurrentWriter(writer: assetWriter, input: assetWriterInput, url: currentURL)
 		assetWriterInput = nil
 		assetWriter = nil
-		return self.chunks.url
 	}
 	
 	func createWriter(startingAt offset: TimeInterval) throws {

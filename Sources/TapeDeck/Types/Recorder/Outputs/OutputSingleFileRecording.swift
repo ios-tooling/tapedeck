@@ -51,15 +51,13 @@ public class OutputSingleFileRecording: RecorderOutput {
 		assetWriter.startSession(atSourceTime: CMTime.zero)
 	}
 	
-	public func endRecording() async throws -> URL {
+	public func endRecording() async throws {
 		await closeCurrentWriter()
 		
 		if internalType != outputType {
 			let converter = AudioFileConverter(source: url, to: outputType, at: outputType.url(from: url), progress: nil)
-			return try await converter.convert()
+			try await converter.convert()
 		}
-		
-		return url
 	}
 	
 	func closeCurrentWriter() async {

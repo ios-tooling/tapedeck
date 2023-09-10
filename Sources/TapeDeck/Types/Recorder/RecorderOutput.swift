@@ -9,11 +9,14 @@ import Foundation
 import AVFoundation
 import Suite
 
-public protocol RecorderOutput: AnyObject {
-	func prepareToRecord() async throws
+public protocol SamplesHandler: AnyObject {
 	func handle(buffer: CMSampleBuffer)
-	func endRecording() async throws -> URL
-	
+	func prepareToRecord() async throws
+	func endRecording() async throws
+}
+
+public protocol RecorderOutput: SamplesHandler {	
 	var containerURL: URL? { get }
 }
+
 

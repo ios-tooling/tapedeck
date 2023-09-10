@@ -17,8 +17,11 @@ extension Recorder {
 	}
 	
 	@MainActor func capture(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-		guard state == .running, let output = self.output else { return }
-		output.handle(buffer: sampleBuffer)
+		guard state == .running else { return }
+		
+		for handler in handlers {
+			handler.handle(buffer: sampleBuffer)
+		}
 		let threshold = outputType.sampleRate / 30
 		
 		if let avg = sampleBuffer.dataBuffer?.average {

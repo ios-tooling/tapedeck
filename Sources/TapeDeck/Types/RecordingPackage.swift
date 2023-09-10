@@ -57,7 +57,7 @@ extension RecordingPackage: RecorderOutput {
 		recording.handle(buffer: buffer)
 	}
 
-	public func endRecording() async throws -> URL {
+	public func endRecording() async throws {
 		try await recording.endRecording()
 	}
 	

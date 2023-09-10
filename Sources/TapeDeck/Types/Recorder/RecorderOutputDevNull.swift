@@ -22,7 +22,6 @@ public class OutputDevNull: RecorderOutput {
 		
 	}
 
-	public func endRecording() async throws -> URL {
-		.blank
+	public func endRecording() async throws {
 	}
 }
