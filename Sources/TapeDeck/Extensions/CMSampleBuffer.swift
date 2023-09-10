@@ -21,9 +21,9 @@ extension CMSampleBuffer {
 		}
 		
 		// Get the number of audio channels
-		var channelInfoSize = 0
-		let channelInfo = CMAudioFormatDescriptionGetChannelLayout(formatDescription, sizeOut: &channelInfoSize)
-		let channelCount = 2//channelInfo?.pointee.mNumberChannelDescriptions ?? 2
+//		var channelInfoSize = 0
+//		let channelInfo = CMAudioFormatDescriptionGetChannelLayout(formatDescription, sizeOut: &channelInfoSize)
+		let channelCount = 1//channelInfo?.pointee.mNumberChannelDescriptions ?? 2
 		
 		// Calculate the number of samples
 		let sampleCount = CMSampleBufferGetNumSamples(self)

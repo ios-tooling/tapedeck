@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension Array where Element == Float {
+public extension Array where Element == Float {
 	var average: Float {
 		if count == 0 { return 0 }
 		let sum = self.sum()
@@ -17,6 +17,22 @@ extension Array where Element == Float {
 	var squaredAverage: Float {
 		let sum = map({ pow($0, 2) }).sum()
 		return floor(sqrt(sum / Float(count)))
+	}
+	
+	func downsampled(from start: Double, to end: Double) -> [Element] {
+		let step = end / start
+		var results: [Element] = []
+		var sum = 0.0
+		var lastIndex = -1
+		
+		for element in self {
+			if Int(sum) != lastIndex {
+				results.append(element)
+				lastIndex = Int(sum)
+			}
+			sum += step
+		}
+		return results
 	}
 }
 
