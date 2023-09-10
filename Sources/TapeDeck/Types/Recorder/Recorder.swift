@@ -39,7 +39,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	var currentAverage: Float = 0.0
 	var currentCount = 0
 	var max: Double = 0
-	var samplingRate = 44_100
+	public var samplingRate: Double { AVAudioSession.sharedInstance().sampleRate }
 	var totalSamplesReceived: Int64 = 0
 
 	override init() {
@@ -80,7 +80,6 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		
 		try AVAudioSessionWrapper.instance.start()
 		if state == .idle {
-			startedAt = Date()
 			self.output = output
 			addSamplesHandler(output)
 			try await output.prepareToRecord()
@@ -102,6 +101,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 
 		audioConnection = audioOutput.connection(with: .audio)
 		session.startRunning()
+		startedAt = Date()
 		try await Microphone.instance.setActive(self)
 		state = .running
 		
