@@ -8,9 +8,10 @@
 import Foundation
 import Suite
 
-public class WAVFile {
+public final class WAVFile {
 	public let url: URL
 	var header: FileHeader!
+	public var chunkHeaders: [ChunkHeader] = []
 	public var mainHeader: FormatChunk!
 	public var chunks: [Chunk] = []
 
@@ -23,6 +24,7 @@ public class WAVFile {
 	public struct Chunk {
 		public let header: FormatChunk
 		public let data: Data
+		public var numberOfSamples: Int { data.count / 2 }
 	}
 	
 	public init(url: URL) throws {
@@ -37,9 +39,9 @@ public class WAVFile {
 		var currentHeader: FormatChunk?
 		
 		while true {
-			guard let chunkHeader = try? data.peek(type: DataChunkHeader.self) else { break }
+			guard let chunkHeader = try? data.peek(type: ChunkHeader.self) else { break }
+			chunkHeaders.append(chunkHeader)
 			let kind = chunkHeader.chunkMarker.fourCharacterCode
-			print(kind)
 
 			switch kind {
 			case "fmt ":
@@ -84,8 +86,9 @@ extension WAVFile {
 		public let bitsPerSample: UInt16
 	}
 	
-	struct DataChunkHeader {
-		let chunkMarker: UInt32		// 'data'
-		let size: UInt32
+	public struct ChunkHeader {
+		public let chunkMarker: UInt32		// 'data'
+		public let size: UInt32
+		public var name: String { chunkMarker.fourCharacterCode }
 	}
 }
