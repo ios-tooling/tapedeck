@@ -13,6 +13,7 @@ public final class WAVFile {
 	var header: FileHeader!
 	public var mainHeader: FormatChunk!
 	public var chunks: [Chunk] = []
+	public var sampleChunks: [Chunk] { chunks.filter { $0.header.chunkMarker == "data".fourCharacterCode }}
 	
 	enum WAVError: Error { case missingFormatHeader }
 	
@@ -27,6 +28,13 @@ public final class WAVFile {
 		public let data: Data?
 		public var numberOfSamples: Int? { data == nil ? nil : (data!.count / 2) }
 		public var name: String { header.chunkMarker.fourCharacterCode }
+		public var samples: [Int16]? {
+			data?.withUnsafeBytes { raw in
+				let samples: [Int16] = raw.bindMemory(to: Int16.self) + []
+				return samples
+			}
+
+		}
 	}
 	
 	public init(sampleRate: Int, channels: Int = 1, bitsPerSample: Int = 16) {
@@ -44,15 +52,15 @@ public final class WAVFile {
 		)
 	}
 	
-	func add(samples: [UInt16]) {
+	public func add(samples: [Int16]) {
 		samples.withUnsafeBufferPointer { raw in
 			raw.withMemoryRebound(to: UInt8.self) { buffer in
-				chunks.append(.init(header: .init(chunkMarker: "DATA".fourCharacterCode, size: UInt32(samples.count * 2)), format: nil, data: Data(buffer)))
+				chunks.append(.init(header: .init(chunkMarker: "data".fourCharacterCode, size: UInt32(samples.count * 2)), format: nil, data: Data(buffer)))
 			}
 		}
 	}
 	
-	func write(to url: URL) throws {
+	public func write(to url: URL) throws {
 		var data = Data()
 		data += Data(bytes: &header!, count: MemoryLayout<FileHeader>.size)
 		
