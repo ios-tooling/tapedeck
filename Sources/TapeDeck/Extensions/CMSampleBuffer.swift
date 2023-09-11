@@ -10,7 +10,7 @@ import AVFoundation
 import Accelerate
 
 extension CMSampleBuffer {
-	public var samples: [Float] {
+	public var samples: [Int16] {
 		guard let audioBuffer = CMSampleBufferGetDataBuffer(self) else {
 			 return []
 		}
@@ -40,7 +40,13 @@ extension CMSampleBuffer {
 		CMBlockBufferCopyDataBytes(audioBuffer, atOffset: 0, dataLength: CMBlockBufferGetDataLength(audioBuffer), destination: audioData)
 		
 		// Convert the Int16 samples to Float
-		vDSP_vflt16(audioData, 1, &samples, 1, vDSP_Length(sampleCount * Int(channelCount)))
-		return samples
+	//	vDSP_vflt16(audioData, 1, &samples, 1, vDSP_Length(sampleCount * Int(channelCount)))
+		return audioData.withMemoryRebound(to: Int16.self, capacity: sampleCount) { pointer in
+			[Int16](UnsafeBufferPointer(start: pointer, count: numSamples))
+		}
 	}
+	
+//	let u16 = data.withUnsafeBytes {
+//		 [Int16](UnsafeBufferPointer(start: $0, count: data.count/MemoryLayout<Int16>.stride))
+//	}
 }

@@ -248,3 +248,64 @@ extension OSStatus {
 		}
 	}
 }
+
+extension AudioFileConverter {
+	func convertWAVTo16kHz(inputURL: URL, outputURL: URL) {
+		 do {
+			  // Initialize an AVAudioFile for the source file (48kHz).
+			  let sourceFile = try AVAudioFile(forReading: inputURL)
+			  
+			  // Specify the target sample rate (16kHz).
+			  let targetSampleRate = 16000.0
+			  
+			  // Create an audio format for the target sample rate.
+			  let targetFormatSettings: [String: Any] = [
+					AVFormatIDKey: kAudioFormatLinearPCM,
+					AVSampleRateKey: targetSampleRate,
+					AVLinearPCMBitDepthKey: 16,
+					AVLinearPCMIsBigEndianKey: false,
+					AVLinearPCMIsFloatKey: false
+			  ]
+			  
+			  let targetFormat = AVAudioFormat(settings: targetFormatSettings)
+			  
+			  // Initialize an AVAudioConverter.
+			  guard let converter = AVAudioConverter(from: sourceFile.processingFormat, to: targetFormat!) else {
+					print("Error creating audio converter")
+					return
+			  }
+			  
+			  // Initialize an AVAudioFile for the output file (16kHz).
+			  let outputFile = try AVAudioFile(forWriting: outputURL, settings: targetFormatSettings)
+			  
+			  // Set up buffer sizes for processing.
+			  let inputBuffer = AVAudioPCMBuffer(pcmFormat: sourceFile.processingFormat, frameCapacity: AVAudioFrameCount(sourceFile.length))!
+			  let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat!, frameCapacity: AVAudioFrameCount(targetSampleRate))!
+			  
+			  // Loop through and convert the audio.
+			  while sourceFile.framePosition < sourceFile.length {
+					try sourceFile.read(into: inputBuffer)
+					
+					// Convert the buffer.
+					let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
+						 outStatus.pointee = AVAudioConverterInputStatus.haveData
+						 return inputBuffer
+					}
+					
+					let status = converter.convert(to: outputBuffer, error: nil, withInputFrom: inputBlock)
+					
+					if status == .error || status == .endOfStream {
+						 break
+					}
+					
+					try outputFile.write(from: outputBuffer)
+			  }
+			  
+			  // Close the output file.
+			//  outputFile.close()
+		 } catch {
+			  print("Error: \(error)")
+		 }
+	}
+
+}
