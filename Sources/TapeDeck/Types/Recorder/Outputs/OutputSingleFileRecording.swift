@@ -17,11 +17,11 @@ public class OutputSingleFileRecording: RecorderOutput {
 	var sampleRate: Int64 = 44100
 	var samplesRead: Int64 = 0
 	var recordingDuration: TimeInterval { TimeInterval(samplesRead / sampleRate) }
-	var outputType = Recorder.AudioFileType.wav
-	var internalType = Recorder.AudioFileType.wav
+	var outputType = Recorder.AudioFileType.wav16k
+	var internalType = Recorder.AudioFileType.wav48k
 	
 	public var containerURL: URL? { url }
-	public init(url dest: URL, type: Recorder.AudioFileType = .wav) {
+	public init(url dest: URL, type: Recorder.AudioFileType = .wav16k) {
 		url = dest.deletingPathExtension().appendingPathExtension(internalType.fileExtension)
 		outputType = type
 

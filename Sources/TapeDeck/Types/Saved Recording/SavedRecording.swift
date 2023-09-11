@@ -16,7 +16,7 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	public let url: URL
 	public var startedAt: Date = Date()
 	public var id: URL { url }
-	public var duration: TimeInterval?
+	public var duration: TimeInterval? { transcript?.duration }
 	public var state: State = .ready
 	
 	public enum State { case preparing, ready, playing }
@@ -64,7 +64,6 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		do {
 			state = .preparing
 			transcript = try Transcript.load(in: url)
-			duration = transcript.duration
 			state = .ready
 		} catch {
 			print("Failed to load segments: \(error)")
@@ -81,8 +80,6 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 				if transcript == nil { await loadSegments() }
 				objectWillChange.sendOnMain()
 			}
-		} else {
-			duration = url.audioDuration
 		}
 	}
 	

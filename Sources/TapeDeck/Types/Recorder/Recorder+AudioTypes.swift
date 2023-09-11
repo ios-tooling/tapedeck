@@ -46,13 +46,41 @@ extension Recorder {
 			return AudioFileType(fileExtension: "m4a", fileType: .m4a, settings: settings, formatID: kAudioFormatMPEG4AAC, outputID: kAudioFileM4AType, sampleRate: AudioFileType.defaultSampleRate)
 		}()
 		
-		public static var wav: AudioFileType = {
+		public static var wav16k: AudioFileType = {
 			var channelLayout = AudioChannelLayout()
 			channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
 			
 			let settings: [String: Any] = [
 				AVFormatIDKey: Int(kAudioFormatLinearPCM),
 				AVSampleRateKey: 16000.0,
+				AVNumberOfChannelsKey: 1,
+				AVLinearPCMIsBigEndianKey: false,
+				AVLinearPCMIsFloatKey: false,
+				AVLinearPCMBitDepthKey: 16,
+				AVLinearPCMIsNonInterleaved: false,
+//				AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+
+//				AVFormatIDKey: kAudioFormatLinearPCM,
+//				AVSampleRateKey: AudioFileType.defaultSampleRate,
+//				AVLinearPCMBitDepthKey: 16,
+//				AVLinearPCMIsFloatKey: false,
+//				AVLinearPCMIsBigEndianKey: false,
+//				AVLinearPCMIsNonInterleaved: false,
+//			//	AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
+//				AVNumberOfChannelsKey: 2,
+//				AVChannelLayoutKey: NSData(bytes: &channelLayout, length: MemoryLayout<AudioChannelLayout>.size)
+			]
+
+			return AudioFileType(fileExtension: "wav", fileType: .wav, settings: settings, sampleRate: 16_000)
+		}()
+
+		public static var wav48k: AudioFileType = {
+			var channelLayout = AudioChannelLayout()
+			channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
+			
+			let settings: [String: Any] = [
+				AVFormatIDKey: Int(kAudioFormatLinearPCM),
+				AVSampleRateKey: 48_000,
 				AVNumberOfChannelsKey: 1,
 				AVLinearPCMIsBigEndianKey: false,
 				AVLinearPCMIsFloatKey: false,

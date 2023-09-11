@@ -47,14 +47,10 @@ extension SavedRecording {
 		RecordingPlayer.instance.player.pause()
 		RecordingPlayer.instance.queuePlayer.pause()
 		
-		if segments.count > 10 {
-			RecordingPlayer.instance.queuePlayer = AVQueuePlayer(items: segments.map { $0.playerItem(basedOn: url) })
-			RecordingPlayer.instance.queuePlayer.play()
-		} else {
-			RecordingPlayer.instance.queuePlayer.play()
+		let items = segments.map { $0.playerItem(basedOn: url) }
+		RecordingPlayer.instance.queuePlayer = AVQueuePlayer(items: items)
+		RecordingPlayer.instance.queuePlayer.play()
 
-		}
-		
 		if let duration {
 			playbackTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { _ in completion() }
 		}

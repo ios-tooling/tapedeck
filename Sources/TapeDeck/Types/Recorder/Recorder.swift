@@ -27,7 +27,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	let queue = DispatchQueue(label: "\(Recorder.self)", qos: .userInitiated, attributes: [], autoreleaseFrequency: .inherit, target: nil)
 	var audioConnection: AVCaptureConnection!
 	let audioOutput = AVCaptureAudioDataOutput()
-	var outputType = AudioFileType.wav
+	var outputType = AudioFileType.wav16k
 	var output: RecorderOutput?
 	public var startedAt: Date?
 	public let levelsSummary = LevelsSummary()
@@ -126,23 +126,24 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	}
 	
 	@MainActor public func stop() async throws {
+		try? AVAudioSessionWrapper.instance.stop()
+		RecordingStore.instance.didEndRecording(to: output)
 		activeTranscript?.endTranscribing()
-		activeTranscript?.save(forOutputURL: output?.containerURL)
 		Microphone.instance.clearActive(self)
 		if state == .idle { return }
 
-		try? AVAudioSessionWrapper.instance.stop()
-		RecordingStore.instance.didEndRecording(to: output)
 		state = .post
-		removeSamplesHandler(output)
-
+		
 		do {
-			_ = try await output?.endRecording()
-			session.stopRunning()
+			for handler in handlers {
+				_ = try await handler.endRecording()
+			}
 		} catch {
-			session.stopRunning()
-			throw error
+			print("Error when ending the recording: \(error)")
 		}
+		activeTranscript?.save(forOutputURL: output?.containerURL)
+		removeSamplesHandler(output)
+		session.stopRunning()
 		state = .idle
 		RecordingStore.instance.didFinishPostRecording(to: output)
 	}

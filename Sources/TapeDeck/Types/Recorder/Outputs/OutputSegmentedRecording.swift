@@ -20,7 +20,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	var samplesRead: Int64 = 0
 	var recordingDuration: TimeInterval = 0
 	var outputType = Recorder.AudioFileType.m4a
-	var internalType = Recorder.AudioFileType.wav
+	var internalType = Recorder.AudioFileType.wav16k
 	var currentURL: URL?
 	var segmentStartedAt: TimeInterval = 0
 	let queue = DispatchQueue(label: "segmented.recording", qos: .userInitiated)
@@ -121,6 +121,8 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 				print("Problem finishing the conversion: \(error)")
 			}
 		}
+		
+		print("Finished writing, total samples: \(samplesRead)")
 	}
 	
 	enum OutputSegmentedRecordingError: Error { case noRecording, outOfRange }
@@ -156,7 +158,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 
 	class ChunkManager {
 		var url: URL
-		var internalType: Recorder.AudioFileType = .wav
+		var internalType: Recorder.AudioFileType = .wav16k
 		var type: Recorder.AudioFileType?
 		var chunks: [ChunkInfo] = []
 		var totalChunks = 0

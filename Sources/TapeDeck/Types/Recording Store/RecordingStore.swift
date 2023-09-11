@@ -28,7 +28,7 @@ public class RecordingStore: ObservableObject {
 		updateRecordings()
 	}
 	
-	public var fileExtensions = [Recorder.AudioFileType.m4a.fileExtension, Recorder.AudioFileType.wav.fileExtension, Recorder.AudioFileType.mp3.fileExtension, RecordingPackage.fileExtension]
+	public var fileExtensions = [Recorder.AudioFileType.m4a.fileExtension, Recorder.AudioFileType.wav16k.fileExtension, Recorder.AudioFileType.mp3.fileExtension, RecordingPackage.fileExtension]
 	
 	public func updateRecordings() {
 		var recordings: [SavedRecording] = []

@@ -20,8 +20,15 @@ public extension Array where Element == Float {
 	}
 	
 	func downsampled(from start: Double, to end: Double) -> [Element] {
-		let step = end / start
 		var results: [Element] = []
+
+		if end == start / 3 {
+			for i in stride(from: 0, to: count - 2, by: 3) {
+				results.append((self[i] + self[i + 1] + self[i + 2]) / 3)
+			}
+			return results
+		}
+		let step = end / start
 		var sum = 0.0
 		var lastIndex = -1
 		
