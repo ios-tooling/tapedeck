@@ -16,9 +16,9 @@ extension CMSampleBuffer {
 		}
 		
 		// Get the audio format description
-		guard let formatDescription = CMSampleBufferGetFormatDescription(self) else {
-			 return []
-		}
+//		guard let formatDescription = CMSampleBufferGetFormatDescription(self) else {
+//			 return []
+//		}
 		
 		// Get the number of audio channels
 //		var channelInfoSize = 0
