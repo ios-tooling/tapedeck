@@ -18,7 +18,7 @@ public final class WAVFile {
 	enum WAVError: Error { case missingFormatHeader }
 	
 	public var isPCM: Bool { mainHeader.type == 65534 }
-	public var sampleRate: Int { Int(mainHeader?.rate ?? 0) }
+	public var sampleRate: Int { Int(mainHeader?.samplesPerSecond ?? 0) }
 	public var numberOfChannels: Int { Int(mainHeader?.channels ?? 0) }
 	
 	public struct Chunk {
@@ -43,11 +43,11 @@ public final class WAVFile {
 		mainHeader = FormatChunk(
 			chunkMarker: "fmt ".fourCharacterCode,
 			size: UInt32(20),
-			type: UInt16(65534),
+			type: UInt16(1),
 			channels: UInt16(channels),
-			rate: UInt32(sampleRate),
-			dataRate: 32000,
-			blockSize: UInt16((bitsPerSample * channels) / 8),
+			samplesPerSecond: UInt32(sampleRate),
+			bytesPerSecond: UInt32(sampleRate * channels * bitsPerSample) / 8,
+			blockSize: 2,
 			bitsPerSample: UInt16(bitsPerSample)
 		)
 	}
@@ -142,8 +142,8 @@ extension WAVFile {
 		public var size: UInt32
 		public let type: UInt16
 		public let channels: UInt16
-		public let rate: UInt32
-		public let dataRate: UInt32
+		public let samplesPerSecond: UInt32
+		public let bytesPerSecond: UInt32
 		public let blockSize: UInt16
 		public let bitsPerSample: UInt16
 		public var cbSize: UInt16 = 22

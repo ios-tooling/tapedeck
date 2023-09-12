@@ -43,6 +43,33 @@ public extension Array where Element == Float {
 	}
 }
 
+public extension Array where Element == Int16 {
+	func downsampled(from start: Double, to end: Double) -> [Element] {
+		var results: [Element] = []
+
+		if false && end == start / 3 {
+			for i in stride(from: 0, to: count - 2, by: 3) {
+				let total = Int32(self[i]) + Int32(self[i + 1]) + Int32(self[i + 2])
+				results.append(Int16(total / 3))
+			}
+			return results
+		}
+		let step = end / start
+		var sum = 0.0
+		var lastIndex = -1
+		
+		for element in self {
+			if Int(sum) != lastIndex {
+				results.append(element)
+				lastIndex = Int(sum)
+			}
+			sum += step
+		}
+		return results
+	}
+
+}
+
 extension Array where Element == Int16 {
 	var average: Element {
 		if count == 0 { return 0 }
