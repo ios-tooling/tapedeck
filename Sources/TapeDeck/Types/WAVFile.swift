@@ -46,36 +46,50 @@ public final class WAVFile {
 			type: UInt16(65534),
 			channels: UInt16(channels),
 			rate: UInt32(sampleRate),
-			rateBitsPerSampleBytes: UInt32((sampleRate * bitsPerSample * numberOfChannels) / 8),
-			bytesPerSample: UInt16((bitsPerSample * channels) / 8),
+			dataRate: 32000,
+			blockSize: UInt16((bitsPerSample * channels) / 8),
 			bitsPerSample: UInt16(bitsPerSample)
 		)
 	}
 	
-	public func add(samples: [Int16]) {
+	public func add(samples: [Int16], andFormat: Bool = true) {
 		samples.withUnsafeBufferPointer { raw in
 			raw.withMemoryRebound(to: UInt8.self) { buffer in
-				chunks.append(.init(header: .init(chunkMarker: "data".fourCharacterCode, size: UInt32(samples.count * 2)), format: nil, data: Data(buffer)))
+				if andFormat {
+					chunks.append(.init(header: .init(chunkMarker: "data".fourCharacterCode, size: UInt32(samples.count * 2)), format: mainHeader, data: Data(buffer)))
+				} else {
+					chunks.append(.init(header: .init(chunkMarker: "data".fourCharacterCode, size: UInt32(samples.count * 2)), format: nil, data: Data(buffer)))
+				}
 			}
 		}
 	}
 	
 	public func write(to url: URL) throws {
 		var data = Data()
-		data += Data(bytes: &header!, count: MemoryLayout<FileHeader>.size)
 		
 		for chunk in chunks {
+			if var format = chunk.format {
+				format.size = UInt32(MemoryLayout<FormatChunk>.size) - 8
+				data += Data(bytes: &format, count: MemoryLayout<FormatChunk>.size)
+
+			}
 			var head = chunk.header
 			data += Data(bytes: &head, count: MemoryLayout<ChunkHeader>.size)
 			if let samples = chunk.data { data += samples }
 		}
 		
+		header.size = UInt32(data.count + 4)
+		data = Data(bytes: &header!, count: MemoryLayout<FileHeader>.size) + data
 		try data.write(to: url)
 	}
 	
 	public init(url: URL) throws {
 		self.url = url
 		try load()
+	}
+	
+	subscript(type: String) -> Chunk? {
+		chunks.first { $0.header.chunkMarker == type.fourCharacterCode }
 	}
 	
 	func load() throws {
@@ -119,19 +133,26 @@ public final class WAVFile {
 extension WAVFile {
 	struct FileHeader {
 		let type: UInt32
-		let size: UInt32
+		var size: UInt32
 		let wavType: UInt32			// 'WAVE'
 	}
 	
 	public struct FormatChunk {				// 'fmt '
 		public let chunkMarker: UInt32
-		public let size: UInt32
+		public var size: UInt32
 		public let type: UInt16
 		public let channels: UInt16
 		public let rate: UInt32
-		public let rateBitsPerSampleBytes: UInt32
-		public let bytesPerSample: UInt16
+		public let dataRate: UInt32
+		public let blockSize: UInt16
 		public let bitsPerSample: UInt16
+		public var cbSize: UInt16 = 22
+		public var validBitsPerSample: UInt16 = 16
+		public var speakerPositionMask: UInt32 = 4
+		public var guid1: UInt32 = 1
+		public var guid2: UInt32 = 1048576
+		public var guid3: UInt32 = 2852126848
+		public var guid4: UInt32 = 1905997824
 	}
 	
 	public struct ChunkHeader {
