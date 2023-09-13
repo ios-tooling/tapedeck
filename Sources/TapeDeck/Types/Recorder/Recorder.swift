@@ -105,9 +105,11 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		try await Microphone.instance.setActive(self)
 		state = .running
 		
-		activeTranscript = Transcript()
-		activeTranscript?.beginTranscribing()
-
+		if let url = output.containerURL {
+			activeTranscript = Transcript(forOutputURL: url)
+			activeTranscript?.beginTranscribing()
+		}
+		
 		RecordingStore.instance.didStartRecording(to: output)
 	}
 	
@@ -141,7 +143,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		} catch {
 			print("Error when ending the recording: \(error)")
 		}
-		activeTranscript?.save(forOutputURL: output?.containerURL)
+		activeTranscript?.save()
 		removeSamplesHandler(output)
 		session.stopRunning()
 		state = .idle

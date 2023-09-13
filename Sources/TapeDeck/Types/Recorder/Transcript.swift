@@ -12,9 +12,11 @@ public class Transcript: Codable {
 	var soundLevels: [SoundLevel] = []
 	var segments: [Segment] = []
 	var startDate = Date()
+	var transcriptions: [Transcription] = []
 	var recordedSoundLevelAt = Date.distantPast
 	var soundLevelInterval = 1.0
 	var duration: TimeInterval = 0
+	var saveURL: URL
 	
 	static let transcriptFilename = "transcript.txt"
 
@@ -28,9 +30,12 @@ public class Transcript: Codable {
 		return try Transcript(container: url)
 	}
 	
-	init() { }
+	init(forOutputURL url: URL) {
+		saveURL = url.appendingPathComponent(Self.transcriptFilename, conformingTo: .json)
+	}
 	
 	init(container url: URL) throws {
+		saveURL = url.appendingPathComponent(Self.transcriptFilename, conformingTo: .json)
 		let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
 		
 		var offset: TimeInterval = 0
@@ -46,12 +51,11 @@ public class Transcript: Codable {
 		self.duration = offset
 	}
 	
-	func save(forOutputURL package: URL?) {
-		guard let package, package.isDirectory else { return }
-		let url = package.appendingPathComponent(Self.transcriptFilename, conformingTo: .json)
+	func save() {
 		do {
+			try? FileManager.default.removeItem(at: saveURL)
 			let data = try JSONEncoder().encode(self)
-			try data.write(to: url)
+			try data.write(to: saveURL)
 		} catch {
 			print("Problem writing transcript: \(error)")
 		}
@@ -63,6 +67,13 @@ public class Transcript: Codable {
 	
 	func endTranscribing() {
 		duration = Date().timeIntervalSince(startDate)
+	}
+	
+	public func transcribed(text: String, at date: Date) {
+		guard !text.isEmpty else { return }
+		
+		transcriptions.append(.init(text: text, date: date))
+		save()
 	}
 	
 	func recordSoundLevel(_ volume: Volume) {
@@ -89,5 +100,10 @@ public class Transcript: Codable {
 	struct SoundLevel: Codable {
 		let offset: TimeInterval
 		let level: Double
+	}
+	
+	struct Transcription: Codable {
+		let text: String
+		let date: Date
 	}
 }
