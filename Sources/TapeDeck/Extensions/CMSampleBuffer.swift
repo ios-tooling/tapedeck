@@ -23,13 +23,13 @@ extension CMSampleBuffer {
 		// Get the number of audio channels
 //		var channelInfoSize = 0
 //		let channelInfo = CMAudioFormatDescriptionGetChannelLayout(formatDescription, sizeOut: &channelInfoSize)
-		let channelCount = 1//channelInfo?.pointee.mNumberChannelDescriptions ?? 2
+//		let channelCount = 1//channelInfo?.pointee.mNumberChannelDescriptions ?? 2
 		
 		// Calculate the number of samples
 		let sampleCount = CMSampleBufferGetNumSamples(self)
 		
 		// Create an array to hold the extracted samples
-		var samples = [Float](repeating: 0.0, count: sampleCount * Int(channelCount))
+		// var samples = [Float](repeating: 0.0, count: sampleCount * Int(channelCount))
 		
 		// Copy audio data into the samples array
 		let audioData = UnsafeMutablePointer<Int16>.allocate(capacity: sampleCount)
