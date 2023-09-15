@@ -121,8 +121,6 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 				print("Problem finishing the conversion: \(error)")
 			}
 		}
-		
-		print("Finished writing, total samples: \(samplesRead)")
 	}
 	
 	enum OutputSegmentedRecordingError: Error { case noRecording, outOfRange }

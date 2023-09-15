@@ -18,7 +18,7 @@ public class Transcript: Codable {
 	var duration: TimeInterval = 0
 	var saveURL: URL
 	
-	static let transcriptFilename = "transcript.txt"
+	static let transcriptFilename = "transcript"
 
 	var isEmpty: Bool { segments.isEmpty }
 
@@ -52,8 +52,8 @@ public class Transcript: Codable {
 	}
 	
 	func save() {
+		try? FileManager.default.removeItem(at: saveURL)
 		do {
-			try? FileManager.default.removeItem(at: saveURL)
 			let data = try JSONEncoder().encode(self)
 			try data.write(to: saveURL)
 		} catch {
