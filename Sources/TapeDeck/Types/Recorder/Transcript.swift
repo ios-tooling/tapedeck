@@ -27,28 +27,36 @@ public class Transcript: Codable {
 		let jsonURL = url.appendingPathComponent(transcriptFilename, conformingTo: .json)
 		if let data = try? Data(contentsOf: jsonURL), let transcript = try? JSONDecoder().decode(Self.self, from: data) { return transcript }
 		
-		return try Transcript(container: url)
+		return Transcript(container: url)
 	}
 	
 	init(forOutputURL url: URL) {
 		saveURL = url.appendingPathComponent(Self.transcriptFilename, conformingTo: .json)
 	}
 	
-	init(container url: URL) throws {
+	init(container url: URL) {
 		saveURL = url.appendingPathComponent(Self.transcriptFilename, conformingTo: .json)
-		let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
-		
-		var offset: TimeInterval = 0
-		let names = urls.map { $0.lastPathComponent }.sorted()
-		
-		for name in names {
-			let fullURL = url.appendingPathComponent(name, conformingTo: .audio)
-			if let duration = fullURL.audioDuration {
-				segments.append(.init(offset: offset, filename: name, samples: 0))
-				offset += duration
+		Task { await self.load(url: url) }
+	}
+	
+	func load(url: URL) async {
+		do {
+			let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
+			
+			var offset: TimeInterval = 0
+			let names = urls.map { $0.lastPathComponent }.sorted()
+			
+			for name in names {
+				let fullURL = url.appendingPathComponent(name, conformingTo: .audio)
+				if let duration = try await fullURL.audioDuration {
+					segments.append(.init(offset: offset, filename: name, samples: 0))
+					offset += duration
+				}
 			}
+			self.duration = offset
+		} catch {
+			print("Transcript load failed: \(error)")
 		}
-		self.duration = offset
 	}
 	
 	func save() {

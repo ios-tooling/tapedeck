@@ -17,10 +17,15 @@ struct SegmentPlaybackInfo: Comparable {
 		lhs.filename < rhs.filename
 	}
 	
-	init?(url: URL) {
-		filename = url.lastPathComponent
-		if let seconds = url.audioDuration {
-			self.duration = seconds
+	private init(duration: TimeInterval, filename: String) {
+		self.duration = duration
+		self.filename = filename
+	}
+	
+	static func info(from url: URL) async -> Self? {
+		let filename = url.lastPathComponent
+		if let seconds = try? await url.audioDuration {
+			return SegmentPlaybackInfo(duration: seconds, filename: filename)
 		} else {
 			return nil
 		}
