@@ -8,7 +8,7 @@
 import Foundation
 import AVFoundation
 
-extension CMSampleBuffer: @unchecked Sendable { }
+extension CMSampleBuffer: @retroactive @unchecked Sendable { }
 
 extension Recorder {
 	nonisolated public func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {

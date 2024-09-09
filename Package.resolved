@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ios-tooling/Suite.git",
       "state" : {
-        "revision" : "043c924ce4b9b035d66be527e5858f37187032bd",
-        "version" : "1.0.135"
+        "branch" : "swift_6",
+        "revision" : "6917c58e78b20ef22d0b225f4fa294d8ec73f7ce"
       }
     },
     {

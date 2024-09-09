@@ -9,6 +9,7 @@ import Foundation
 import AVFoundation
 import Combine
 import Suite
+import OSLog
 
 @MainActor public class Microphone: NSObject, ObservableObject, MicrophoneListener {
 	static public let instance = Microphone()
@@ -56,8 +57,9 @@ import Suite
 			case .ended:
                 if self.interruptCount == 0 { return }
                 
-                DispatchQueue.main.async(after: 1.0) {
-						  logg("Recording Interrruption ended \(self.interruptCount)")
+                Task { @MainActor in
+						 try? await Task.sleep(nanoseconds: 1_000_000_000)
+						 os_log("Recording Interrruption ended \(self.interruptCount)")
                     self.interruptCount -= 1
                     if self.interruptCount != 0 || !self.isPausedDueToInterruption { return }
 						  Task { try? await self.start() }
@@ -177,11 +179,11 @@ import Suite
 }
 
 extension Microphone: AVAudioRecorderDelegate {
-	public func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
-		logg(error: error, "Recording error")
+	nonisolated public func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
+		os_log("Recording error: \(error)")
 	}
 	
-	public func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+	nonisolated public func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
 	}
 }
 
