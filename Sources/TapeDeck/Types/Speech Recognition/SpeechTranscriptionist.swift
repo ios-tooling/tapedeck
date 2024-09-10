@@ -5,7 +5,7 @@
 //  Created by Ben Gottlieb on 9/1/23.
 //
 
-import Foundation
+import Suite
 import AVFoundation
 import Speech
 
@@ -18,12 +18,12 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 	
 	private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
 	private var recognitionTask: SFSpeechRecognitionTask?
-	var textCallback: ((String) -> Void)?
+	var textCallback: ((String, Double) -> Void)?
 	var observationToken: Any?
 	
 	@Published public var currentTranscription = SpeechTranscription()
 
-	var isRunning = false
+	public var isRunning = false
 
 	override init() {
 		super.init()
@@ -40,17 +40,19 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 		}
 	}
 	
-	public func start(textCallback: ((String) -> Void)?) async throws {
+	@MainActor public func start(textCallback: ((String, Double) -> Void)? = nil) async throws {
 		if isRunning { return }
+		if Gestalt.isOnSimulator { throw Recorder.RecorderError.notImplementedOnSimulator }
 		
 		if await !requestPermission() { return }
 		inputNode = audioEngine.inputNode
 		
+		self.textCallback = textCallback
 		self.fullTranscript = ""
 		self.currentTranscription = SpeechTranscription()
 		recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-		guard let recognitionRequest = recognitionRequest else { throw Recorder.RecorderError.unableToCreateRecognitionRequest }
-	//	recognitionRequest.shouldReportPartialResults = true
+		guard let recognitionRequest else { throw Recorder.RecorderError.unableToCreateRecognitionRequest }
+		recognitionRequest.shouldReportPartialResults = true
 		recognitionRequest.requiresOnDeviceRecognition = true
 		
 		guard let recordingFormat = inputNode?.outputFormat(forBus: 0) else { return }
@@ -98,31 +100,20 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 				return
 			}
 			
+			self.currentTranscription.replaceRecentText(with: result)
+			
 			if let best = result?.bestTranscription {
+				let confidence = best.segments.map { Double($0.confidence) }.average() ?? 0.0
+
 				if best.formattedString.hasPrefix(self.lastString) {
 					self.fullTranscript += best.formattedString.dropFirst(self.lastString.count) + " "
 				}
 				self.lastString = best.formattedString
+				self.textCallback?(self.lastString, confidence)
 			}
 		}
 
 		return task
-//		{ result, error in
-//			var isFinal = false
-//			
-//			if let result {
-//				self.textCallback?(result.bestTranscription.formattedString)
-//				// Update the text view with the results.
-//				//self.textView.text = result.bestTranscription.formattedString
-//				//print(result)
-//				print("Recognized: \(result.bestTranscription.formattedString)")
-//				isFinal = result.isFinal
-//			}
-//			
-//			if error != nil || isFinal {
-//				self.stop()
-//			}
-//		}
 	}
 }
 

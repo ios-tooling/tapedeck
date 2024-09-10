@@ -15,7 +15,7 @@ import Accelerate
 public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampleBufferDelegate, MicrophoneListener {
 	public static let instance = Recorder()
 	
-	enum RecorderError: String, Error { case unableToAddOutput, unableToAddInput, noValidInputs, cantRecordOnSimulator, unableToCreateRecognitionRequest, unableToCreateRecognitionTask }
+	enum RecorderError: String, Error { case notImplementedOnSimulator, unableToAddOutput, unableToAddInput, noValidInputs, cantRecordOnSimulator, unableToCreateRecognitionRequest, unableToCreateRecognitionTask }
 	
 	public enum State { case idle, running, paused, post }
 	
