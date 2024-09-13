@@ -8,8 +8,16 @@
 import Foundation
 import Speech
 
-public struct SpeechTranscription: Codable {
+public struct SpeechTranscription: Codable, Equatable, Hashable {
 	var phrases: [Phrase] = []
+	
+	mutating func finalize() {
+		for index in phrases.indices {
+			if phrases[index].confidence == 0.0 {
+				phrases[index].confidence = 0.1
+			}
+		}
+	}
 	
 	var confidentWords: [String] {
 		phrases.filter { $0.confidence > 0.0 }.map { $0.raw }
@@ -35,9 +43,9 @@ public struct SpeechTranscription: Codable {
 }
 
 extension SpeechTranscription {
-	public struct Phrase: Codable, Equatable {
+	public struct Phrase: Codable, Equatable, Hashable {
 		public let raw: String
 		public let options: [String]
-		public let confidence: Double
+		public var confidence: Double
 	}
 }

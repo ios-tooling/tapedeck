@@ -40,6 +40,16 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 		}
 	}
 	
+	public func setRunning(_ running: Bool) async throws {
+		if running == isRunning { return }
+		
+		if running {
+			try await start()
+		} else {
+			stop()
+		}
+	}
+	
 	@MainActor public func start(textCallback: ((String, Double) -> Void)? = nil) async throws {
 		if isRunning { return }
 		if Gestalt.isOnSimulator { throw Recorder.RecorderError.notImplementedOnSimulator }
@@ -72,7 +82,8 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 	}
 	
 	public func stop() {
-		print(self.fullTranscript)
+		currentTranscription.finalize()
+		
 		if isRunning {
 			audioEngine.stop()
 			isRunning = false
