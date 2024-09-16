@@ -46,7 +46,7 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 		if running {
 			try await start()
 		} else {
-			stop()
+			await stop()
 		}
 	}
 	
@@ -81,7 +81,7 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 		isRunning = true
 	}
 	
-	public func stop() {
+	@MainActor public func stop() {
 		currentTranscription.finalize()
 		
 		if isRunning {
