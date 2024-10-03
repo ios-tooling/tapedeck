@@ -10,28 +10,34 @@ import Suite
 @available(iOS 17.0, *)
 public struct SpeechRecognitionView: View {
 	@State var isRunning = false
+	let fixedIsRunning: Bool?
 	
-	public init() { }
+	public init(isRunning: Bool? = nil) {
+		fixedIsRunning = isRunning
+	}
 	
 	var imageName: String {
 		if Gestalt.isOnSimulator { return "mic.slash.circle" }
-		if isRunning { return "stop.circle.fill" }
+		
+		if (fixedIsRunning ?? isRunning) { return "stop.circle.fill" }
 		return "mic.circle.fill"
 	}
 	
 	public var body: some View {
-		SpeechRecognitionContainer(running: isRunning) { transcript in
+		SpeechRecognitionContainer(running: fixedIsRunning ?? isRunning) { transcript in
 			HStack {
 				ScrollView {
 					Text(transcript.confidentText + " ").foregroundStyle(.primary) + Text(transcript.recentText).foregroundStyle(.secondary)
 				}
 				.frame(maxWidth: .infinity, alignment: .leading)
 				
-				AsyncButton(action: { try await toggle() }) {
-					Image(systemName: imageName)
-						.font(.system(size: 32))
-						.foregroundStyle(Gestalt.isOnSimulator ? .red : .accentColor)
-						.padding()
+				if fixedIsRunning == nil {
+					AsyncButton(action: { try await toggle() }) {
+						Image(systemName: imageName)
+							.font(.system(size: 32))
+							.foregroundStyle(Gestalt.isOnSimulator ? .red : .accentColor)
+							.padding()
+					}
 				}
 			}
 			.background {

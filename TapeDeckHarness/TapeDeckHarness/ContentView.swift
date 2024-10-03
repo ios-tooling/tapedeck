@@ -31,11 +31,15 @@ struct ContentView: View {
 				.frame(width: 45, height: 45)
 
 			SoundLevelsView()
-			SpeechRecognitionContainer(text: $text, running: isRunning) { trans in
-				
-				TextField("Speak!", text: $text, axis: .vertical)
-				
-			}
+			SpeechRecognitionView(isRunning: isRunning)
+				.overlay {
+					if !isRunning { Text("Not Recording").bold().opacity(0.25) }
+				}
+//			SpeechRecognitionContainer(text: $text, running: isRunning) { trans in
+//				
+//				TextField("Speak!", text: $text, axis: .vertical)
+//				
+//			}
 			
 			HStack {
 				AsyncButton(action: { isRunning.toggle() }) {
