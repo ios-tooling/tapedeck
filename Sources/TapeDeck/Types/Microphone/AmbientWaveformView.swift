@@ -1,17 +1,25 @@
 //
-//  SwiftSiriWaveformView.swift
+//  AmbientWaveformView.swift
 //
 //
 //  Created by Ben Gottlieb on 9/7/23.
 //
 
-import SwiftUI
+import Suite
 
-public struct SwiftSiriWaveformView : View {
+public extension Color {
+	static let siriPurple = Color(hex: 0x5A28D1)
+}
+
+@available(iOS 15.0, *)
+public struct AmbientWaveformView : View {
 	@ObservedObject var history = Microphone.instance.history
+	@ObservedObject var mic = Microphone.instance
 	
-	public init(showWhenMicrophoneOff: Bool = false) {
+	public init(showWhenMicrophoneOff: Bool = false, waveColors: [ForegroundStyle] = [], lineWidth: Double = 0.5) {
 		self.showWhenMicrophoneOff = showWhenMicrophoneOff
+		self.lineWidth = lineWidth
+		self.waveColors = waveColors
 	}
 	
 	var frequency: CGFloat = 1.5
@@ -19,9 +27,10 @@ public struct SwiftSiriWaveformView : View {
 	var phaseShift: CGFloat = -0.15
 	var density: CGFloat = 1.0
 	var numberOfWaves = 3
-	var waveColor = Color.black
+	var waveColors: [ForegroundStyle]
 	let showWhenMicrophoneOff: Bool
-	
+	let lineWidth: Double
+		
 	@State var amplitude: CGFloat = 1.0
 	@State var phase:CGFloat = 0.0
 	let timer = Timer.publish(every: 0.01, on: .main, in: .common).autoconnect()
@@ -57,11 +66,12 @@ public struct SwiftSiriWaveformView : View {
 			ZStack {
 				ForEach(0..<numberOfWaves, id: \.self) { waveIndex in
 					let progress = 1.0 - CGFloat(waveIndex) / CGFloat(self.numberOfWaves)
-					let normedAmplitude = (1.5 * progress - 0.8) * self.amplitude
+					let normedAmplitude = ((1.5 * progress - 0.8) * self.amplitude) * (mic.isListening ? 1 : 0.05)
 					let fraction = Double(self.numberOfWaves - waveIndex)
+					let waveColor = waveColors.isEmpty ? ForegroundStyle.foreground : waveColors[waveIndex % waveColors.count]
 					
 					SingleWave(index: waveIndex, normedAmplitude: normedAmplitude, density: density, frequency: frequency, phase: phase)
-						.stroke(waveColor.opacity(fraction / Double(numberOfWaves)), style: .init(lineWidth: fraction * 0.5))
+						.stroke(waveColor.opacity(fraction / Double(numberOfWaves)), style: .init(lineWidth: lineWidth * fraction, lineCap: .round, lineJoin: .round))
 					
 				}
 				.onReceive(timer) { _ in
