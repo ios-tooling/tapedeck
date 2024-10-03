@@ -1,0 +1,33 @@
+{
+  "originHash" : "e6a149020211888de4b33cfc1fe8ff4a0ec2daab4ec075effc9b286d805cdf99",
+  "pins" : [
+    {
+      "identity" : "journalist",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/Journalist.git",
+      "state" : {
+        "revision" : "c2b35ee743638869b65da551074ded4df99f9ce8",
+        "version" : "1.0.12"
+      }
+    },
+    {
+      "identity" : "suite",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/Suite.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "b83b9c8a5b25af2cfa61a4bbb70b16b55f7c3198"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-syntax",
+      "state" : {
+        "revision" : "64889f0c732f210a935a0ad7cda38f77f876262d",
+        "version" : "509.1.1"
+      }
+    }
+  ],
+  "version" : 3
+}

@@ -17,7 +17,7 @@ let package = Package(
             targets: ["TapeDeck"]),
     ],
 	 dependencies: [
-		.package(url: "https://github.com/ios-tooling/Suite.git", branch: "swift_6"),
+		.package(url: "https://github.com/ios-tooling/Suite.git", branch: "main"),
 		.package(url: "https://github.com/ios-tooling/Journalist.git", from: "1.0.12"),
 
 	 ],
