@@ -7,7 +7,6 @@
 
 import Suite
 
-@available(iOS 17.0, *)
 public struct SpeechRecognitionView: View {
 	@State var isRunning = false
 	let fixedIsRunning: Bool?
@@ -27,7 +26,7 @@ public struct SpeechRecognitionView: View {
 		SpeechRecognitionContainer(running: fixedIsRunning ?? isRunning) { transcript in
 			HStack {
 				ScrollView {
-					Text(transcript.confidentText + " ").foregroundStyle(.primary) + Text(transcript.recentText).foregroundStyle(.secondary)
+					TranscribedText(transcript: transcript)
 				}
 				.frame(maxWidth: .infinity, alignment: .leading)
 				

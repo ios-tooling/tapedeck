@@ -19,17 +19,21 @@ public struct SpeechTranscription: Codable, Equatable, Hashable {
 		}
 	}
 	
-	var confidentWords: [String] {
+	public var confidentWords: [String] {
 		phrases.filter { $0.confidence > 0.0 }.map { $0.raw }
 	}
 	
-	var confidentText: String { confidentWords.joined(separator: " ") }
+	public var confidentText: String { confidentWords.joined(separator: " ") }
+
+	public var allWords: [String] { phrases.map { $0.raw } }
 	
-	var recentWords: [String] {
+	public var allText: String { allWords.joined(separator: " ") }
+
+	public var recentWords: [String] {
 		phrases.filter { $0.confidence == 0.0 }.map { $0.raw }
 	}
 
-	var recentText: String { recentWords.joined(separator: " ") }
+	public var recentText: String { recentWords.joined(separator: " ") }
 
 	mutating func replaceRecentText(with result: SFSpeechRecognitionResult?) {
 		guard let recent = result?.bestTranscription else { return }

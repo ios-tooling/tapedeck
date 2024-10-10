@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-@available(iOS 17.0, *)
 public struct SpeechRecognitionContainer<Content: View>: View {
 	let content: (SpeechTranscription) -> Content
 	@StateObject var transcript = SpeechTranscriptionist()
@@ -22,14 +21,17 @@ public struct SpeechRecognitionContainer<Content: View>: View {
 		self.includePendingText = includePendingText
 	}
 	
+	func setup() {
+		Task { try? await transcript.setRunning(isRunning) }
+	}
+	
 	public var body: some View {
 		VStack {
 			content(transcript.currentTranscription)
 		}
-		.onChange(of: isRunning, initial: true) {
-			Task { try? await transcript.setRunning(isRunning) }
-		}
-		.onChange(of: transcript.currentTranscription) {
+		.onChange(of: isRunning) { _ in setup() }
+		.onAppear { setup() }
+		.onChange(of: transcript.currentTranscription) { _ in
 			if !includePendingText {
 				text = transcript.currentTranscription.confidentText
 			} else {
