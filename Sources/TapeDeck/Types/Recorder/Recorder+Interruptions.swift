@@ -29,7 +29,8 @@ extension Recorder {
 			case .ended:
 				if self.interruptCount == 0 { return }
 				
-				DispatchQueue.main.async(after: 1.0) {
+				Task { @MainActor in
+					try? await Task.sleep(nanoseconds: 1_000_000_000)
 					print("Recording Interrruption ended \(self.interruptCount)")
 					self.interruptCount -= 1
 					if self.interruptCount != 0 || !self.isPausedDueToInterruption { return }

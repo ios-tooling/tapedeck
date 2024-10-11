@@ -23,7 +23,6 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	var internalType = Recorder.AudioFileType.wav16k
 	var currentURL: URL?
 	var segmentStartedAt: TimeInterval = 0
-	let queue = DispatchQueue(label: "segmented.recording", qos: .userInitiated)
 	
 	public var containerURL: URL?
 	
@@ -35,30 +34,25 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	}
 
 	public func handle(buffer sampleBuffer: CMSampleBuffer) {
-		queue.async { [weak self] in
-			guard let self else { return }
-			guard let input = assetWriterInput else {
-				print("No current writer configured")
-				return
-			}
-			
-			if assetWriter?.status == .unknown {
-				print("Unknown writer status")
-				return
-			}
-			
-			if !input.append(sampleBuffer) {
-				print("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
-			}
-			chunkSamplesRead += Int64(sampleBuffer.numSamples)
-			samplesRead += Int64(sampleBuffer.numSamples)
-			recordingDuration = TimeInterval(samplesRead / Int64(sampleRate * 1))
-			
-			if chunkSamplesRead >= chunkSize {
-				queue.async {
-					try? self.createWriter(startingAt: self.recordingDuration)
-				}
-			}
+		guard let input = assetWriterInput else {
+			print("No current writer configured")
+			return
+		}
+		
+		if assetWriter?.status == .unknown {
+			print("Unknown writer status")
+			return
+		}
+		
+		if !input.append(sampleBuffer) {
+			print("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
+		}
+		chunkSamplesRead += Int64(sampleBuffer.numSamples)
+		samplesRead += Int64(sampleBuffer.numSamples)
+		recordingDuration = TimeInterval(samplesRead / Int64(sampleRate * 1))
+		
+		if chunkSamplesRead >= chunkSize {
+			try? self.createWriter(startingAt: self.recordingDuration)
 		}
 	}
 	

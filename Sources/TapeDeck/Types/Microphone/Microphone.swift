@@ -101,9 +101,7 @@ import OSLog
 		if let last = listenerStack.last {
 			listenerStack.removeLast()
 			activeListener = last
-			DispatchQueue.main.async {
-				Task { _ = try? await last.start() }
-			}
+			Task { @MainActor in _ = try? await last.start() }
 		} else {
 			activeListener = nil
 		}
