@@ -35,6 +35,10 @@ public struct SpeechTranscription: Codable, Equatable, Hashable {
 
 	public var recentText: String { recentWords.joined(separator: " ") }
 
+	public mutating func reset() {
+		phrases = []
+	}
+	
 	mutating func replaceRecentText(with result: SFSpeechRecognitionResult?) {
 		guard let recent = result?.bestTranscription else { return }
 		
