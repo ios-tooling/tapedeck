@@ -107,6 +107,8 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 //		let task = speechRecognizer.recognitionTask(with: recognitionRequest, delegate: self)
 		let task = speechRecognizer.recognitionTask(with: recognitionRequest) { result, error in
 			if let error {
+				let ns = error as NSError
+				if ns.domain == "kAFAssistantErrorDomain", ns.code == 1110 { return }
 				print("Recognition Error: \(error)")
 				return
 			}
