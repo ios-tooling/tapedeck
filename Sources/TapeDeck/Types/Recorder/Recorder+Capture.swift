@@ -21,31 +21,33 @@ extension Recorder {
 		
 		totalSamplesReceived += Int64(sampleBuffer.numSamples)
 
-		for handler in handlers {
-			handler.handle(buffer: sampleBuffer)
-		}
-		let threshold = outputType.sampleRate / 30
-		
-		if let avg = sampleBuffer.dataBuffer?.average {
-			currentAverage += avg * Float(sampleBuffer.numSamples)
-			currentCount += sampleBuffer.numSamples
+		Task {
+			for handler in handlers {
+				await handler.handle(buffer: sampleBuffer)
+			}
+			let threshold = outputType.sampleRate / 30
 			
-			levelsSummary.add(samples: sampleBuffer.dataBuffer?.sampleInt16s ?? [])
-			if currentCount > threshold {
-				let cumeAverage = Double(currentAverage / Float(currentCount))
-				let db = cumeAverage
-				let calibrated = db - Volume.baselineDBAdjustment
+			if let avg = sampleBuffer.dataBuffer?.average {
+				currentAverage += avg * Float(sampleBuffer.numSamples)
+				currentCount += sampleBuffer.numSamples
 				
-				let reported = Volume(detectedRoomVolume: connection.audioChannels.last?.averagePowerLevel.double)
-				let environmentDBAvgSPL = reported ?? Volume.dB(calibrated)
-				if environmentDBAvgSPL.db > max {
-					max = environmentDBAvgSPL.db
+				levelsSummary.add(samples: sampleBuffer.dataBuffer?.sampleInt16s ?? [])
+				if currentCount > threshold {
+					let cumeAverage = Double(currentAverage / Float(currentCount))
+					let db = cumeAverage
+					let calibrated = db - Volume.baselineDBAdjustment
+					
+					let reported = Volume(detectedRoomVolume: connection.audioChannels.last?.averagePowerLevel.double)
+					let environmentDBAvgSPL = reported ?? Volume.dB(calibrated)
+					if environmentDBAvgSPL.db > max {
+						max = environmentDBAvgSPL.db
+					}
+					
+					Microphone.instance.history.record(volume: environmentDBAvgSPL)
+					activeTranscript?.recordSoundLevel(environmentDBAvgSPL)
+					currentAverage = 0
+					currentCount = 0
 				}
-				
-				Microphone.instance.history.record(volume: environmentDBAvgSPL)
-				activeTranscript?.recordSoundLevel(environmentDBAvgSPL)
-				currentAverage = 0
-				currentCount = 0
 			}
 		}
 	}

@@ -10,13 +10,13 @@ import AVFoundation
 import Suite
 
 public protocol SamplesHandler: AnyObject {
-	func handle(buffer: CMSampleBuffer)
+	func handle(buffer: CMSampleBuffer) async
 	func prepareToRecord() async throws
 	func endRecording() async throws
 }
 
 public protocol RecorderOutput: SamplesHandler {	
-	var containerURL: URL? { get }
+	var containerURL: URL? { get async }
 }
 
 

@@ -80,8 +80,8 @@ public class RecordingStore: ObservableObject {
 		self.updateRecordings()
 	}
 	
-	func didStartRecording(to output: RecorderOutput?) {
-		if let url = output?.containerURL {
+	func didStartRecording(to output: RecorderOutput?) async {
+		if let url = await output?.containerURL {
 			replace(SavedRecording(url: url, transcript: Recorder.instance.activeTranscript))
 		}
 		self.objectWillChange.sendOnMain()

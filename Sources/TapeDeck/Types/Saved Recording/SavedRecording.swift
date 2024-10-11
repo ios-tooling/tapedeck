@@ -32,9 +32,11 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	}
 	
 	public var runningDuration: TimeInterval? {
-		if let playbackStartedAt { return Date().timeIntervalSince(playbackStartedAt) }
-		if isActive { return Date().timeIntervalSince(startedAt) }
-		return nil
+		get async {
+			if let playbackStartedAt { return Date().timeIntervalSince(playbackStartedAt) }
+			if await isActive { return Date().timeIntervalSince(startedAt) }
+			return nil
+		}
 	}
 	
 	public var isPackage: Bool { url.pathExtension == RecordingPackage.fileExtension }
@@ -52,8 +54,10 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	}
 	
 	public var isActive: Bool {
-		if !Recorder.instance.isRecording { return false }
-		return Recorder.instance.output?.containerURL?.deletingPathExtension().lastPathComponent == url.deletingPathExtension().lastPathComponent
+		get async {
+			if !Recorder.instance.isRecording { return false }
+			return await Recorder.instance.output?.containerURL?.deletingPathExtension().lastPathComponent == url.deletingPathExtension().lastPathComponent
+		}
 	}
 	
 	public static func <(lhs: SavedRecording, rhs: SavedRecording) -> Bool {

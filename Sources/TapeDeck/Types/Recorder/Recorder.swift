@@ -105,12 +105,12 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		try await Microphone.instance.setActive(self)
 		state = .running
 		
-		if let url = output.containerURL {
+		if let url = await output.containerURL {
 			activeTranscript = Transcript(forOutputURL: url)
 			activeTranscript?.beginTranscribing()
 		}
 		
-		RecordingStore.instance.didStartRecording(to: output)
+		await RecordingStore.instance.didStartRecording(to: output)
 	}
 	
 	@MainActor public func pause() async throws {
