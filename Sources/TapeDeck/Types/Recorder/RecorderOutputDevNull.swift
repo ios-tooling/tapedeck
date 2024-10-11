@@ -9,7 +9,7 @@ import Foundation
 import AVFoundation
 import Suite
 
-public class OutputDevNull: RecorderOutput {
+public actor OutputDevNull: RecorderOutput {
 	public static let instance = OutputDevNull()
 	
 	public func prepareToRecord() async throws {

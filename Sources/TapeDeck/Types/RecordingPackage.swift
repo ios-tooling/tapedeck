@@ -8,7 +8,7 @@
 import Foundation
 import AVFoundation
 
-public class RecordingPackage {
+public actor RecordingPackage {
 	public let url: URL
 	
 	public var recording: OutputSegmentedRecording!
@@ -16,29 +16,29 @@ public class RecordingPackage {
 	public var levelSummary: LevelsSummary?
 	
 	public var timeFrameString: String? { levelSummary?.timeFrameString }
+	
+	public let containerURL: URL?
 
 	public init?(url: URL, bufferDuration: TimeInterval = 60) {
 		self.url = url.deletingPathExtension().appendingPathExtension(Self.fileExtension)
-		try? FileManager.default.createDirectory(at: soundFilesURL, withIntermediateDirectories: true, attributes: nil)
-		levelSummary = try? LevelsSummary.loadJSON(file: levelsURL)
-		recording = OutputSegmentedRecording(in: soundFilesURL, bufferDuration: 60)
+		containerURL = url.soundFilesURL
+		try? FileManager.default.createDirectory(at: url.soundFilesURL, withIntermediateDirectories: true, attributes: nil)
+		levelSummary = try? LevelsSummary.loadJSON(file: url.levelsURL)
+		recording = OutputSegmentedRecording(in: url.soundFilesURL, bufferDuration: 60)
 	}
 	
 	public var startedAt: Date? { levelSummary?.startedAt }
 	
 	let levelsFileName = "levels.json"
 	let soundsDirectoryName = "sounds"
-	
-	var levelsURL: URL { url.appendingPathComponent(levelsFileName) }
-	var soundFilesURL: URL { url.appendingPathComponent(soundsDirectoryName) }
-	
+		
 	public func start() async throws {
 		try await Recorder.instance.startRecording(to: recording)
 	}
 	
 	public func stop() async throws {
 		do {
-			try await Recorder.instance.levelsSummary.save(to: levelsURL)
+			try await Recorder.instance.levelsSummary.save(to: url.levelsURL)
 			try await Recorder.instance.stop()
 		} catch {
 			try? await Recorder.instance.stop()
@@ -53,14 +53,16 @@ extension RecordingPackage: RecorderOutput {
 		try await recording.prepareToRecord()
 	}
 
-	public func handle(buffer: CMSampleBuffer) {
-		recording.handle(buffer: buffer)
+	public func handle(buffer: CMSampleBuffer) async {
+		await recording.handle(buffer: buffer)
 	}
 
 	public func endRecording() async throws {
 		try await recording.endRecording()
 	}
-	
-	public var containerURL: URL? { recording.containerURL }
+}
 
+fileprivate extension URL {
+	var levelsURL: URL { appendingPathComponent("levels.json") }
+	var soundFilesURL: URL { appendingPathComponent("sounds") }
 }

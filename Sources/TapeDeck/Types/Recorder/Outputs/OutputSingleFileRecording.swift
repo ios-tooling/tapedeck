@@ -9,7 +9,7 @@ import Foundation
 import AVFoundation
 import Suite
 
-public class OutputSingleFileRecording: RecorderOutput {
+public actor OutputSingleFileRecording: RecorderOutput {
 	let url: URL
 	
 	var assetWriter: AVAssetWriter!
@@ -32,7 +32,7 @@ public class OutputSingleFileRecording: RecorderOutput {
 	public func handle(buffer sampleBuffer: CMSampleBuffer) {
 		guard let assetWriterInput else { return }
 		if !assetWriterInput.append(sampleBuffer) {
-			logg("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
+			print("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
 		}
 		samplesRead += Int64(sampleBuffer.numSamples)
 	}

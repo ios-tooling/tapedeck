@@ -9,7 +9,7 @@ import Foundation
 import AVFoundation
 import Suite
 
-public protocol SamplesHandler: AnyObject {
+public protocol SamplesHandler: Actor {
 	func handle(buffer: CMSampleBuffer) async
 	func prepareToRecord() async throws
 	func endRecording() async throws
