@@ -38,7 +38,7 @@ public class RecordingPackage {
 	
 	public func stop() async throws {
 		do {
-			try Recorder.instance.levelsSummary.save(to: levelsURL)
+			try await Recorder.instance.levelsSummary.save(to: levelsURL)
 			try await Recorder.instance.stop()
 		} catch {
 			try? await Recorder.instance.stop()

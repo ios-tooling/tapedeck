@@ -111,7 +111,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		input.markAsFinished()
 
 		if let current = url {
-			Recorder.instance.activeTranscript?.addSegment(start: segmentStartedAt, filename: current.deletingPathExtension().lastPathComponent, samples: 0)
+			await Recorder.instance.activeTranscript?.addSegment(start: segmentStartedAt, filename: current.deletingPathExtension().lastPathComponent, samples: 0)
 			if writer.status != .completed {
 				await writer.finishWriting()
 			}

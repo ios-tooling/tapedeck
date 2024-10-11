@@ -11,7 +11,7 @@ import SwiftUI
 import Suite
 import AVFoundation
 
-public class RecordingStore: ObservableObject {
+@MainActor public class RecordingStore: ObservableObject {
 	public static let instance = RecordingStore()
 	
 	public var recordings: [SavedRecording] = []

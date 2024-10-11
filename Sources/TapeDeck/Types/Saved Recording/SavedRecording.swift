@@ -55,7 +55,7 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	
 	public var isActive: Bool {
 		get async {
-			if !Recorder.instance.isRecording { return false }
+			if await !Recorder.instance.isRecording { return false }
 			return await Recorder.instance.output?.containerURL?.deletingPathExtension().lastPathComponent == url.deletingPathExtension().lastPathComponent
 		}
 	}
