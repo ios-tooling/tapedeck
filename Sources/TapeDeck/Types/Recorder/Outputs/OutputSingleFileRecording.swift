@@ -9,8 +9,8 @@ import Foundation
 import AVFoundation
 import Suite
 
-public actor OutputSingleFileRecording: RecorderOutput {
-	let url: URL
+public actor OutputSingleFileRecording: RecorderOutput, CustomStringConvertible {
+	nonisolated let url: URL
 	
 	var assetWriter: AVAssetWriter!
 	var assetWriterInput: AVAssetWriterInput!
@@ -58,6 +58,10 @@ public actor OutputSingleFileRecording: RecorderOutput {
 			let converter = AudioFileConverter(source: url, to: outputType, at: outputType.url(from: url), progress: nil)
 			try await converter.convert()
 		}
+	}
+	
+	nonisolated public var description: String {
+		"Audio file at \(url.path)"
 	}
 	
 	func closeCurrentWriter() async {
