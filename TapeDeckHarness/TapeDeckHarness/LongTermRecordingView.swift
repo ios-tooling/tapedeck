@@ -10,15 +10,17 @@ import TapeDeck
 import FileBrowser
 
 struct LongTermRecordingView: View {
+	let root = URL.documents
 	@State var url: URL?
 	@State var recording: OutputSegmentedRecording?
 	@ObservedObject var recorder = Recorder.instance
 	@State var fileBrowserURL: URL?
+	@State var listingRecordings = false
 	
 	func start() async throws {
-		url = URL.tempFile(named: Date.now.formatted(.iso8601))
+		url = root.appendingPathComponent(Date.now.formatted(.iso8601).replacingOccurrences(of: ":", with: ";"))
 		
-		recording = OutputSegmentedRecording(in: url!, outputType: .m4a, bufferDuration: 60)
+		recording = OutputSegmentedRecording(in: url!, outputType: .m4a, bufferDuration: 5)
 		try await recorder.startRecording(to: recording!)
 	}
 	
@@ -28,13 +30,16 @@ struct LongTermRecordingView: View {
 	}
 	
 	var body: some View {
-		Button("Files") {
-			fileBrowserURL = URL.temporaryDirectory
+		HStack {
+			Button("Files") { fileBrowserURL = root }
+			.fullScreenCover(item: $fileBrowserURL) { url in
+				FileBrowserView(root: url)
+			}
+			
+			Button("Recordings") { listingRecordings.toggle() }
+			.sheet(isPresented: $listingRecordings) { RecordingList(url: root) }
 		}
-		.fullScreenCover(item: $fileBrowserURL) { url in
-			FileBrowserView(root: url)
-		}
-
+		
 		if let recording {
 			HStack {
 				Text("Recording")
