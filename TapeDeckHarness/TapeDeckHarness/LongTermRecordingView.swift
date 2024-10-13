@@ -35,12 +35,20 @@ struct LongTermRecordingView: View {
 			FileBrowserView(root: url)
 		}
 
-		if recording != nil {
-			Text("Recording")
+		if let recording {
+			HStack {
+				Text("Recording")
+			}
 			AsyncButton(action: { try await stop() }) {
 				Image(systemName: "stop.circle.fill")
 					.foregroundStyle(.red)
 			}
+			
+			SoundLevelsView()
+				.frame(height: 100)
+			
+			SegmentedRecordingFileList(recording: recording)
+			
 		} else {
 			Text("Start Recording")
 			AsyncButton(action: { try await start() }) {

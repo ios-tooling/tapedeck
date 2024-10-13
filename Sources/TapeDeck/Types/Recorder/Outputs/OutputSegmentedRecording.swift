@@ -9,6 +9,10 @@ import Foundation
 import AVFoundation
 import Suite
 
+@globalActor public actor RecordingActor: GlobalActor {
+	public static let shared = RecordingActor()
+}
+
 public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	var chunks: ChunkManager
 	var assetWriter: AVAssetWriter!
@@ -75,6 +79,14 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		assetWriter = nil
 	}
 	
+	public var recordingChunkURLs: [URL] {
+		chunks.chunks.map { $0.url }
+	}
+	
+	public var recordingChunks: [SegmentedRecordingChunkInfo] {
+		chunks.chunks
+	}
+	
 	func createWriter(startingAt offset: TimeInterval) throws {
 		let writer = assetWriter
 		let writerInput = assetWriterInput
@@ -106,6 +118,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 
 		if let current = url {
 			await Recorder.instance.activeTranscript?.addSegment(start: segmentStartedAt, filename: current.deletingPathExtension().lastPathComponent, samples: 0)
+			objectWillChange.sendOnMain()
 			if writer.status != .completed {
 				await writer.finishWriting()
 			}
@@ -152,7 +165,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		var url: URL
 		var internalType: Recorder.AudioFileType = .wav16k
 		var type: Recorder.AudioFileType?
-		var chunks: [ChunkInfo] = []
+		var chunks: [SegmentedRecordingChunkInfo] = []
 		var totalChunks = 0
 		var durationLimit: TimeInterval?
 		let chunkDuration: TimeInterval
@@ -166,7 +179,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 			//RecordingStore.instance.addDirectory(url)
 			
 			if let existing = try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]) {
-				chunks = existing.compactMap({ ChunkInfo(url: $0)}).sorted()
+				chunks = existing.compactMap({ SegmentedRecordingChunkInfo(url: $0)}).sorted()
 				if let first = existing.compactMap({ $0.lastPathComponent.components(separatedBy: ".").first }).first, let count = Int(first) { totalChunks = count }
 			}
 		}
@@ -217,7 +230,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 			let offsetString = offset.durationString(showLeadingZero: true).replacingOccurrences(of: ":", with: ";")
 			let name = "\(String(format: "%06d", totalChunks)). \(offsetString)-\(duration).\(ext)"
 			let newURL = parent.appendingPathComponent(name)
-			if let chunk = ChunkInfo(url: newURL) { chunks.append(chunk) }
+			if let chunk = SegmentedRecordingChunkInfo(url: newURL) { chunks.append(chunk) }
 			
 			if let durationLimit {
 				while storedDuration > (durationLimit + chunkDuration) {
@@ -227,39 +240,6 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 			}
 			return newURL
 		}
-		
-		struct ChunkInfo: Comparable {		// File name format: #. <offset>-<duration>.wav
-			var url: URL
-			let start: TimeInterval
-			let duration: TimeInterval
-			let index: Int
-			var end: TimeInterval { start + duration }
-
-			static func <(lhs: ChunkInfo, rhs: ChunkInfo) -> Bool { lhs.index < rhs.index }
-			static func ==(lhs: ChunkInfo, rhs: ChunkInfo) -> Bool { lhs.url == rhs.url }
-
-			init?(url: URL) {
-				self.url = url
-				
-				let filename = url.lastPathComponent.replacingOccurrences(of: ";", with: ":")
-				let components = filename.components(separatedBy: ".")
-
-				guard
-					let index = Int(components.first ?? ""),
-					components.count > 2,
-					let offset = TimeInterval(string: components[1].trimmingCharacters(in: .whitespaces).components(separatedBy: "-").first),
-					let duration = TimeInterval(string: components[1].trimmingCharacters(in: .whitespaces).components(separatedBy: "-").last) else {
-					self.index = 0
-					self.start = 0
-					self.duration = 0
-					logg("Failed to setup a segmented recording chunk")
-					return nil
-				}
-				
-				self.index = index
-				self.start = offset
-				self.duration = duration
-			}
-		}
 	}
 }
+
