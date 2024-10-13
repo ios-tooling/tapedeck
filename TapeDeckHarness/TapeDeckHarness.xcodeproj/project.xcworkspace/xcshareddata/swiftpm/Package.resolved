@@ -1,6 +1,15 @@
 {
-  "originHash" : "e6a149020211888de4b33cfc1fe8ff4a0ec2daab4ec075effc9b286d805cdf99",
+  "originHash" : "05c838b66e66621840be86f3d61713d64d5cf007095ea903fe28024c4ad83a2e",
   "pins" : [
+    {
+      "identity" : "filebrowser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/filebrowser",
+      "state" : {
+        "revision" : "fe30626075b49a1304d9a505f3f6d281a192a804",
+        "version" : "0.0.4"
+      }
+    },
     {
       "identity" : "journalist",
       "kind" : "remoteSourceControl",

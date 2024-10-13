@@ -48,7 +48,7 @@ public class OutputSegmentedRecording: ObservableObject, RecorderOutput {
 			}
 			
 			if !input.append(sampleBuffer) {
-				logg("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
+				print("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
 			}
 			chunkSamplesRead += Int64(sampleBuffer.numSamples)
 			samplesRead += Int64(sampleBuffer.numSamples)
