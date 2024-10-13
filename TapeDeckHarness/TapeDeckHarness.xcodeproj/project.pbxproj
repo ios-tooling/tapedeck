@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B55D3B132CBB34DC00787034 /* FileBrowser in Frameworks */ = {isa = PBXBuildFile; productRef = B55D3B122CBB34DC00787034 /* FileBrowser */; };
 		B5FE39162CACB01700EB82D5 /* TapeDeck in Frameworks */ = {isa = PBXBuildFile; productRef = B5FE39152CACB01700EB82D5 /* TapeDeck */; };
 /* End PBXBuildFile section */
 
@@ -41,6 +42,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B5FE39162CACB01700EB82D5 /* TapeDeck in Frameworks */,
+				B55D3B132CBB34DC00787034 /* FileBrowser in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +86,7 @@
 			name = TapeDeckHarness;
 			packageProductDependencies = (
 				B5FE39152CACB01700EB82D5 /* TapeDeck */,
+				B55D3B122CBB34DC00787034 /* FileBrowser */,
 			);
 			productName = TapeDeckHarness;
 			productReference = B5FE38FA2CACAF9700EB82D5 /* TapeDeckHarness.app */;
@@ -115,6 +118,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				B5FE39142CACB01700EB82D5 /* XCLocalSwiftPackageReference "../../TapeDeck" */,
+				B55D3B112CBB34DC00787034 /* XCRemoteSwiftPackageReference "filebrowser" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B5FE38FB2CACAF9700EB82D5 /* Products */;
@@ -360,7 +364,23 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		B55D3B112CBB34DC00787034 /* XCRemoteSwiftPackageReference "filebrowser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ios-tooling/filebrowser";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		B55D3B122CBB34DC00787034 /* FileBrowser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B55D3B112CBB34DC00787034 /* XCRemoteSwiftPackageReference "filebrowser" */;
+			productName = FileBrowser;
+		};
 		B5FE39152CACB01700EB82D5 /* TapeDeck */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TapeDeck;
