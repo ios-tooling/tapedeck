@@ -10,7 +10,7 @@ import AVFoundation
 
 // based off of https://stackoverflow.com/questions/42972276/ios-convert-audio-sample-rate-from-16-khz-to-8-khz
 
-class AudioSampleConverter {
+@AudioActor class AudioSampleConverter {
 	static let instance = AudioSampleConverter()
 	
 	var audioConverter: AudioConverterRef?

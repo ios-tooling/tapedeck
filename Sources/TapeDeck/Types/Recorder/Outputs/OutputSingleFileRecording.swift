@@ -55,7 +55,7 @@ public actor OutputSingleFileRecording: RecorderOutput, CustomStringConvertible 
 		await closeCurrentWriter()
 		
 		if internalType != outputType {
-			let converter = AudioFileConverter(source: url, to: outputType, at: outputType.url(from: url), progress: nil)
+			let converter = await AudioFileConverter(source: url, to: outputType, at: outputType.url(from: url), progress: nil)
 			try await converter.convert()
 		}
 	}
