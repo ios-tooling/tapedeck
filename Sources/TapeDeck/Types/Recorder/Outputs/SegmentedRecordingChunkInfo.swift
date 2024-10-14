@@ -6,6 +6,7 @@
 //
 
 import Suite
+import AVFoundation
 
 public struct SegmentedRecordingChunkInfo: Comparable, Sendable, Identifiable {		// File name format: #. <offset>-<duration>.wav
 	public var url: URL
@@ -20,6 +21,11 @@ public struct SegmentedRecordingChunkInfo: Comparable, Sendable, Identifiable {	
 
 	public var timeDescription: String {
 		start.durationString(style: .seconds, showLeadingZero: true) + " - " + end.durationString(style: .seconds, showLeadingZero: true)
+	}
+	
+	public func play() {
+		RecordingPlayer.instance.player.replaceCurrentItem(with: AVPlayerItem(url: url))
+		RecordingPlayer.instance.player.play()
 	}
 	
 	init?(url: URL) {

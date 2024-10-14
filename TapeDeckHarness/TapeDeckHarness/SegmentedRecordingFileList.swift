@@ -19,7 +19,9 @@ public struct SegmentedRecordingFileList: View {
 	public var body: some View {
 		List {
 			ForEach(chunks) { chunk in
-				Text(chunk.timeDescription)
+				Button(action: { chunk.play() }) {
+					Text(chunk.timeDescription)
+				}
 			}
 		}
 		.task {

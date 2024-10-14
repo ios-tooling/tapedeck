@@ -18,7 +18,7 @@ extension OutputSegmentedRecording {
 	}
 	
 	func prepare() {
-		clearChunks()
+		if !chunks.isEmpty { clearChunks() }
 		
 		if let existing = try? FileManager.default.contentsOfDirectory(at: chunkURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]) {
 			chunks = existing.compactMap({ SegmentedRecordingChunkInfo(url: $0)}).sorted()

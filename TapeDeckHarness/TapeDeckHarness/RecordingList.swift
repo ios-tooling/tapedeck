@@ -5,26 +5,20 @@
 //  Created by Ben Gottlieb on 10/13/24.
 //
 
-import SwiftUI
+import Suite
 import TapeDeck
 
 struct RecordingList: View {
 	let url: URL
-	
+	@Binding var selectedRecording: OutputSegmentedRecording?
+
 	@State var recordingURLs: [URL] = []
 	@State var transcripts: [Transcript] = []
 	
 	var body: some View {
 		List {
 			ForEach(transcripts) { transcript in
-				HStack(spacing: 0) {
-					Text(transcript.startDate.formatted())
-					Spacer()
-					Text(transcript.duration.durationString(style: .minutes, showLeadingZero: true))
-					let secondsOnly = Int(transcript.duration) % 60
-					Text(String(format: ":%02d", secondsOnly))
-						.opacity(0.5)
-				}
+				RecordingRow(transcript: transcript, selectedRecording: $selectedRecording)
 			}
 			.onDelete { indices in
 				for transcript in transcripts[indices] {
@@ -46,8 +40,28 @@ struct RecordingList: View {
 			}
 		}
 	}
-}
+	
+	struct RecordingRow: View {
+		@Environment(\.dismiss) var dismiss
+		let transcript: Transcript
+		@Binding var selectedRecording: OutputSegmentedRecording?
 
-#Preview {
-	RecordingList(url: .documents)
+		var body: some View {
+			AsyncButton(action: {
+				if let recording = try? await transcript.buildRecording() {
+					selectedRecording = recording
+					dismiss()
+				}
+			}) {
+				HStack(spacing: 0) {
+					Text(transcript.startDate.formatted())
+					Spacer()
+					Text(transcript.duration.durationString(style: .minutes, showLeadingZero: true))
+					let secondsOnly = Int(transcript.duration) % 60
+					Text(String(format: ":%02d", secondsOnly))
+						.opacity(0.5)
+				}
+			}
+		}
+	}
 }

@@ -27,6 +27,12 @@ public class Transcript: Codable, Identifiable, CustomStringConvertible {
 		duration.durationString(style: .minutes, showLeadingZero: true)
 	}
 	
+	public func buildRecording() async throws -> OutputSegmentedRecording {
+		let recording = OutputSegmentedRecording(in: saveURL.deletingLastPathComponent() )
+		await recording.prepare()
+		return recording
+	}
+	
 	public func deleteRecording() throws {
 		try FileManager.default.removeItem(at: saveURL.deletingLastPathComponent())
 	}

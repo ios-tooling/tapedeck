@@ -37,7 +37,7 @@ struct LongTermRecordingView: View {
 			}
 			
 			Button("Recordings") { listingRecordings.toggle() }
-			.sheet(isPresented: $listingRecordings) { RecordingList(url: root) }
+				.sheet(isPresented: $listingRecordings) { RecordingList(url: root, selectedRecording: $recording) }
 		}
 		
 		if let recording {
