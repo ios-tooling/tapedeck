@@ -39,7 +39,7 @@ public class Transcript: Codable, Identifiable, CustomStringConvertible {
 	
 	public static func load(in url: URL) throws -> Transcript {
 		let jsonURL = url.appendingPathComponent(transcriptFilename, conformingTo: .json)
-		if let data = try? Data(contentsOf: jsonURL), var transcript = try? JSONDecoder().decode(Self.self, from: data) {
+		if let data = try? Data(contentsOf: jsonURL), let transcript = try? JSONDecoder().decode(Self.self, from: data) {
 			transcript.saveURL = jsonURL
 			return transcript
 		}

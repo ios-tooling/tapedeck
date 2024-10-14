@@ -13,8 +13,6 @@ import Suite
 @AudioActor public class AudioFileConverter: NSObject {
 	enum ConversionError: Error { case noInput, outputTypeNotSupported, failedtoCreateExportSesssion, failedtoCreateExportFile, failedtoCreateSourceFile, OSError(Int32) }
 	
-	private let queue = DispatchQueue(label: "audioFileConverter", qos: .userInitiated)
-	
 	private var sources: [URL]
 	private var startOffset: TimeInterval?
 	private var endDuration: TimeInterval?
@@ -60,7 +58,7 @@ import Suite
 			exportSession.outputFileType = outputFormat.fileType
 			exportSession.outputURL = destination
 			
-			await exportSession.export()
+			try await exportSession.exportAsync()
 			if self.deleteSource { try? FileManager.default.removeItem(at: source) }
 
 		}
@@ -76,116 +74,115 @@ import Suite
 			
 			try? FileManager.default.removeItem(at: destination)
 			
-			self.queue.async {
-				var totalBytesWritten: Int64 = 0
-				var totalBytesRead: Int64 = 0
-				var inputRef: ExtAudioFileRef!
-				var outputRef: ExtAudioFileRef!
-				var converter: AudioConverterRef!
+			var totalBytesWritten: Int64 = 0
+			var totalBytesRead: Int64 = 0
+			var inputRef: ExtAudioFileRef!
+			var outputRef: ExtAudioFileRef!
+			var converter: AudioConverterRef!
+			
+			do {
+				var size: UInt32 = 0
+				var destinationDesc: AudioStreamBasicDescription!
+				var sourceCount = 0
 				
-				do {
-					var size: UInt32 = 0
-					var destinationDesc: AudioStreamBasicDescription!
-					var sourceCount = 0
+				for sourceURL in self.sources {
+					self.progress?.wrappedValue = Double(sourceCount) / Double(self.sources.count)
+					sourceCount += 1
+					var sourceDesc = AudioStreamBasicDescription()
+					try self.attempt("ExtAudioFileOpenURL") { ExtAudioFileOpenURL(sourceURL as CFURL, &inputRef) }
+					size = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+					try self.attempt("ExtAudioFileGetProperty input") { ExtAudioFileGetProperty(inputRef, kExtAudioFileProperty_FileDataFormat, &size, &sourceDesc) }
 					
-					for sourceURL in self.sources {
-						self.progress?.wrappedValue = Double(sourceCount) / Double(self.sources.count)
-						sourceCount += 1
-						var sourceDesc = AudioStreamBasicDescription()
-						try self.attempt("ExtAudioFileOpenURL") { ExtAudioFileOpenURL(sourceURL as CFURL, &inputRef) }
-						size = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
-						try self.attempt("ExtAudioFileGetProperty input") { ExtAudioFileGetProperty(inputRef, kExtAudioFileProperty_FileDataFormat, &size, &sourceDesc) }
+					if destinationDesc == nil {
+						destinationDesc = try AudioStreamBasicDescription(source: sourceDesc, format: format)
 						
-						if destinationDesc == nil {
-							destinationDesc = try AudioStreamBasicDescription(source: sourceDesc, format: format)
-							
-							try self.attempt("ExtAudioFileCreateWithURL") { ExtAudioFileCreateWithURL(self.destination as CFURL, outputID, &destinationDesc, nil, AudioFileFlags.eraseFile.rawValue, &outputRef) }
-						}
-						
-						var clientDesc = try AudioStreamBasicDescription(source: sourceDesc, format: kAudioFormatLinearPCM)
-						let sampleSize = UInt32(MemoryLayout<Int32>.size)
-						clientDesc.mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsPacked
-						clientDesc.mBitsPerChannel = 8 * sampleSize
-						clientDesc.mChannelsPerFrame = sourceDesc.mChannelsPerFrame
-						clientDesc.mFramesPerPacket = 1
-						clientDesc.mBytesPerFrame = sourceDesc.mChannelsPerFrame * sampleSize
-						clientDesc.mBytesPerPacket = clientDesc.mBytesPerFrame
-						clientDesc.mSampleRate = sourceDesc.mSampleRate
-						clientDesc.mReserved = 0
-						
-						size = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
-						try self.attempt("ExtAudioFileSetProperty client input") { ExtAudioFileSetProperty(inputRef, kExtAudioFileProperty_ClientDataFormat, size, &clientDesc) }
-						try self.attempt("ExtAudioFileSetProperty client output") { ExtAudioFileSetProperty(outputRef, kExtAudioFileProperty_ClientDataFormat, size, &clientDesc) }
-						
-						size = UInt32(MemoryLayout<AudioConverterRef>.size)
-						try self.attempt("ExtAudioFileGetProperty AudioConverterRef") { ExtAudioFileGetProperty(outputRef, kExtAudioFileProperty_AudioConverter, &size, &converter) }
-						
-						// check for interuption handling here
-						
-						let bufferByteSize = 32768
-						var currentSourceBytesRead: Int64 = 0
-						let buffer = AudioBuffer(mNumberChannels: clientDesc.mChannelsPerFrame, mDataByteSize: UInt32(bufferByteSize), mData: UnsafeMutableRawPointer.allocate(byteCount: bufferByteSize, alignment: 8))
-						let bytesPerFrame = clientDesc.mBytesPerFrame > 0 ? clientDesc.mBytesPerFrame : 1
-						
-						var sampleSkipCount = sourceURL == self.sources.first ? Int64((self.startOffset ?? 0) * sourceDesc.mSampleRate) : 0
-						var maxSampleCount = (sourceURL == self.sources.last && self.endDuration != nil) ? Int64(self.endDuration! * sourceDesc.mSampleRate) : nil
-						
-						while true {
-							let bufferList = AudioBufferList.allocate(maximumBuffers: 1)
-							var numberOfFrames: UInt32 = 0
-							bufferList[0] = buffer
-							
-							numberOfFrames = UInt32(bufferByteSize) / bytesPerFrame
-							if let maxFrames = maxSampleCount, maxFrames < numberOfFrames {
-								numberOfFrames = UInt32(maxFrames)
-							} else if sampleSkipCount > 0, sampleSkipCount < numberOfFrames {
-								numberOfFrames = UInt32(sampleSkipCount)
-							}
-							
-							try self.attempt("ExtAudioFileRead load source") { ExtAudioFileRead(inputRef, &numberOfFrames, bufferList.unsafeMutablePointer) }
-							totalBytesRead += Int64(numberOfFrames * bytesPerFrame)
-							
-							if numberOfFrames == 0 { break }			// all done!
-							
-							if let max = maxSampleCount {
-								if max == 0 {
-									break
-								} else if max < numberOfFrames {
-									try self.attempt("ExtAudioFileWrite write destination") { ExtAudioFileWrite(outputRef, UInt32(max), bufferList.unsafePointer) }
-									totalBytesWritten += max
-									break
-								} else {
-									maxSampleCount = max - Int64(numberOfFrames)
-								}
-							}
-							
-							currentSourceBytesRead += Int64(numberOfFrames)
-							if sampleSkipCount >= numberOfFrames {
-								sampleSkipCount -= Int64(numberOfFrames)
-								continue
-							}
-							
-							try self.attempt("ExtAudioFileWrite write destination") { ExtAudioFileWrite(outputRef, numberOfFrames, bufferList.unsafePointer) }
-							totalBytesWritten += Int64(numberOfFrames)
-						}
-						if inputRef != nil { ExtAudioFileDispose(inputRef) }
-						if self.deleteSource { try? FileManager.default.removeItem(at: sourceURL) }
+						try self.attempt("ExtAudioFileCreateWithURL") { ExtAudioFileCreateWithURL(self.destination as CFURL, outputID, &destinationDesc, nil, AudioFileFlags.eraseFile.rawValue, &outputRef) }
 					}
 					
-					if outputRef != nil { ExtAudioFileDispose(outputRef) }
-					if converter != nil { AudioConverterDispose(converter) }
+					var clientDesc = try AudioStreamBasicDescription(source: sourceDesc, format: kAudioFormatLinearPCM)
+					let sampleSize = UInt32(MemoryLayout<Int32>.size)
+					clientDesc.mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsPacked
+					clientDesc.mBitsPerChannel = 8 * sampleSize
+					clientDesc.mChannelsPerFrame = sourceDesc.mChannelsPerFrame
+					clientDesc.mFramesPerPacket = 1
+					clientDesc.mBytesPerFrame = sourceDesc.mChannelsPerFrame * sampleSize
+					clientDesc.mBytesPerPacket = clientDesc.mBytesPerFrame
+					clientDesc.mSampleRate = sourceDesc.mSampleRate
+					clientDesc.mReserved = 0
 					
-					continuation.resume(returning: self.destination)
-				} catch {
-					if outputRef != nil { ExtAudioFileDispose(outputRef) }
+					size = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+					try self.attempt("ExtAudioFileSetProperty client input") { ExtAudioFileSetProperty(inputRef, kExtAudioFileProperty_ClientDataFormat, size, &clientDesc) }
+					try self.attempt("ExtAudioFileSetProperty client output") { ExtAudioFileSetProperty(outputRef, kExtAudioFileProperty_ClientDataFormat, size, &clientDesc) }
+					
+					size = UInt32(MemoryLayout<AudioConverterRef>.size)
+					try self.attempt("ExtAudioFileGetProperty AudioConverterRef") { ExtAudioFileGetProperty(outputRef, kExtAudioFileProperty_AudioConverter, &size, &converter) }
+					
+					// check for interuption handling here
+					
+					let bufferByteSize = 32768
+					var currentSourceBytesRead: Int64 = 0
+					let buffer = AudioBuffer(mNumberChannels: clientDesc.mChannelsPerFrame, mDataByteSize: UInt32(bufferByteSize), mData: UnsafeMutableRawPointer.allocate(byteCount: bufferByteSize, alignment: 8))
+					let bytesPerFrame = clientDesc.mBytesPerFrame > 0 ? clientDesc.mBytesPerFrame : 1
+					
+					var sampleSkipCount = sourceURL == self.sources.first ? Int64((self.startOffset ?? 0) * sourceDesc.mSampleRate) : 0
+					var maxSampleCount = (sourceURL == self.sources.last && self.endDuration != nil) ? Int64(self.endDuration! * sourceDesc.mSampleRate) : nil
+					
+					while true {
+						let bufferList = AudioBufferList.allocate(maximumBuffers: 1)
+						var numberOfFrames: UInt32 = 0
+						bufferList[0] = buffer
+						
+						numberOfFrames = UInt32(bufferByteSize) / bytesPerFrame
+						if let maxFrames = maxSampleCount, maxFrames < numberOfFrames {
+							numberOfFrames = UInt32(maxFrames)
+						} else if sampleSkipCount > 0, sampleSkipCount < numberOfFrames {
+							numberOfFrames = UInt32(sampleSkipCount)
+						}
+						
+						try self.attempt("ExtAudioFileRead load source") { ExtAudioFileRead(inputRef, &numberOfFrames, bufferList.unsafeMutablePointer) }
+						totalBytesRead += Int64(numberOfFrames * bytesPerFrame)
+						
+						if numberOfFrames == 0 { break }			// all done!
+						
+						if let max = maxSampleCount {
+							if max == 0 {
+								break
+							} else if max < numberOfFrames {
+								try self.attempt("ExtAudioFileWrite write destination") { ExtAudioFileWrite(outputRef, UInt32(max), bufferList.unsafePointer) }
+								totalBytesWritten += max
+								break
+							} else {
+								maxSampleCount = max - Int64(numberOfFrames)
+							}
+						}
+						
+						currentSourceBytesRead += Int64(numberOfFrames)
+						if sampleSkipCount >= numberOfFrames {
+							sampleSkipCount -= Int64(numberOfFrames)
+							continue
+						}
+						
+						try self.attempt("ExtAudioFileWrite write destination") { ExtAudioFileWrite(outputRef, numberOfFrames, bufferList.unsafePointer) }
+						totalBytesWritten += Int64(numberOfFrames)
+					}
 					if inputRef != nil { ExtAudioFileDispose(inputRef) }
-					if converter != nil { AudioConverterDispose(converter) }
-					
-					continuation.resume(throwing: error)
+					if self.deleteSource { try? FileManager.default.removeItem(at: sourceURL) }
 				}
+				
+				if outputRef != nil { ExtAudioFileDispose(outputRef) }
+				if converter != nil { AudioConverterDispose(converter) }
+				
+				continuation.resume(returning: self.destination)
+			} catch {
+				if outputRef != nil { ExtAudioFileDispose(outputRef) }
+				if inputRef != nil { ExtAudioFileDispose(inputRef) }
+				if converter != nil { AudioConverterDispose(converter) }
+				
+				continuation.resume(throwing: error)
 			}
 		}
-
+		
+		
 	}
 	
 	enum AudioFileConverterError: Error, LocalizedError { case systemError(String, Int32)

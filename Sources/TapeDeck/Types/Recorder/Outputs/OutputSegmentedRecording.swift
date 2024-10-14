@@ -63,7 +63,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	}
 	
 	public func delete() {
-		Task { await clearChunks() }
+		clearChunks()
 	}
 	
 	public func prepareToRecord() async throws {

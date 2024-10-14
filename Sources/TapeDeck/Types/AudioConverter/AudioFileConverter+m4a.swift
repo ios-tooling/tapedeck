@@ -18,9 +18,28 @@ extension AudioFileConverter {
 		exportSession.outputFileType = .m4a
 		exportSession.outputURL = output
 		
-		await exportSession.export()
+		try await exportSession.exportAsync()
 		if deleteSource { try? FileManager.default.removeItem(at: url) }
 		return output
 	}
+}
 
+extension AVAssetExportSession: @unchecked @retroactive Sendable {
+	func exportAsync() async throws {
+		_ = try await withCheckedThrowingContinuation { continuation in
+			self.exportAsynchronously {
+				switch self.status {
+				case .completed:
+					continuation.resume()
+				case .failed: fallthrough
+				default:
+					if let error = self.error {
+						continuation.resume(throwing: error)
+					} else {
+						continuation.resume()
+					}
+				}
+			}
+		}
+	}
 }

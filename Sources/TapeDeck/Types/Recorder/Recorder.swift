@@ -100,7 +100,7 @@ import Accelerate
 		}
 
 		audioConnection = audioOutput.connection(with: .audio)
-		session.startRunning()
+		await session.startRunningAsync()
 		startedAt = Date()
 		try await Microphone.instance.setActive(self)
 		state = .running
@@ -162,4 +162,13 @@ import Accelerate
 		}
 	}
 	
+}
+
+extension AVCaptureSession {
+	func startRunningAsync() async {
+		let _: Void = await withCheckedContinuation { continuation in
+			self.startRunning()
+			continuation.resume()
+		}
+	}
 }
