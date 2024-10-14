@@ -13,7 +13,6 @@ import Suite
 }
 
 public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
-	var chunks: ChunkManager
 	var assetWriter: AVAssetWriter!
 	var assetWriterInput: AVAssetWriterInput!
 	var chunkDuration: TimeInterval = 5
@@ -27,13 +26,17 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	var currentURL: URL?
 	var segmentStartedAt: TimeInterval = 0
 	
+	var chunks: [SegmentedRecordingChunkInfo] = []
+	var totalChunks = 0
+	nonisolated let durationLimit: TimeInterval?
+
 	public var containerURL: URL?
 	
 	public init(in url: URL, outputType: Recorder.AudioFileType = .m4a, bufferDuration: TimeInterval = 30, ringDuration: TimeInterval? = nil) {
 		self.containerURL = url
+		self.durationLimit = ringDuration
 		self.outputType = outputType
 		self.chunkDuration = bufferDuration
-		chunks = ChunkManager(url: url, type: outputType, durationLimit: ringDuration, chunkDuration: chunkDuration)
 	}
 
 	public func handle(buffer sampleBuffer: CMSampleBuffer) {
@@ -60,11 +63,11 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	}
 	
 	public func delete() {
-		chunks.clearOut()
+		Task { await clearChunks() }
 	}
 	
 	public func prepareToRecord() async throws {
-		chunks.prepare()
+		prepare()
 
 		samplesRead = 0
 		recordingDuration = 0
@@ -79,11 +82,11 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	}
 	
 	public var recordingChunkURLs: [URL] {
-		chunks.chunks.map { $0.url }
+		get { chunks.map { $0.url } }
 	}
 	
 	public var recordingChunks: [SegmentedRecordingChunkInfo] {
-		chunks.chunks
+		get { chunks }
 	}
 	
 	func createWriter(startingAt offset: TimeInterval) throws {
@@ -99,7 +102,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		assetWriterInput = AVAssetWriterInput(mediaType: .audio, outputSettings: internalType.settings)
 		assetWriterInput.expectsMediaDataInRealTime = true
 		
-		let nextURL = chunks.url(startingAt: offset, duration: chunkDuration)
+		let nextURL = chunkURL(startingAt: offset, duration: chunkDuration)
 		
 		chunkSamplesRead = 0
 		try? FileManager.default.removeItem(at: nextURL)
@@ -122,7 +125,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 				await writer.finishWriting()
 			}
 			do {
-				try await self.chunks.didFinishWriting(to: current)
+				try await didFinishWriting(to: current)
 			} catch {
 				print("Problem finishing the conversion: \(error)")
 			}
@@ -132,11 +135,11 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	enum OutputSegmentedRecordingError: Error { case noRecording, outOfRange }
 	
 	public func extract(range: Range<TimeInterval>?, progress: Binding<Double>? = nil, format: Recorder.AudioFileType = .m4a, to url: URL) async throws -> URL {
-		guard chunks.available != nil else {
+		guard availableRange != nil else {
 			throw OutputSegmentedRecordingError.noRecording
 		}
 		
-		let chunks = self.chunks.chunks
+		let chunks = chunks
 		var firstIndex = 0
 		var lastIndex = chunks.count - 1
 		var startOffset: TimeInterval = 0
