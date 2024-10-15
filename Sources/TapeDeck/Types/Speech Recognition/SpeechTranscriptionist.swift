@@ -12,19 +12,25 @@ import Speech
 public class SpeechTranscriptionist: NSObject, ObservableObject {
 	public static let instance = SpeechTranscriptionist()
 	
-	private let audioEngine = AVAudioEngine()
-	private var inputNode: AVAudioNode?
-	private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))!
+	let audioEngine = AVAudioEngine()
+	var inputNode: AVAudioNode?
+	let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))!
 	
-	private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-	private var recognitionTask: SFSpeechRecognitionTask?
-	var textCallback: ((String, Double) -> Void)?
+	var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+	var recognitionTask: SFSpeechRecognitionTask?
+	var textCallback: ((TranscriptionResult) -> Void)?
 	var observationToken: Any?
+	
+	public enum TranscriptionResult { case phrase(String, Double), pause }
 	
 	@Published public var currentTranscription = SpeechTranscription()
 
 	public var isRunning = false
-
+	var lastString = ""
+	var fullTranscript = ""
+	var pauseTask: Task<Void, Never>?
+	var pauseDuration = 3.0
+	
 	override init() {
 		super.init()
 		speechRecognizer.delegate = self
@@ -50,56 +56,6 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 		}
 	}
 	
-	@MainActor public func start(textCallback: ((String, Double) -> Void)? = nil) async throws {
-		if isRunning { return }
-		if Gestalt.isOnSimulator { throw Recorder.RecorderError.notImplementedOnSimulator }
-		
-		if await !requestPermission() { return }
-		inputNode = audioEngine.inputNode
-		
-		self.textCallback = textCallback
-		self.fullTranscript = ""
-		self.currentTranscription = SpeechTranscription()
-		recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-		guard let recognitionRequest else { throw Recorder.RecorderError.unableToCreateRecognitionRequest }
-		recognitionRequest.shouldReportPartialResults = true
-		recognitionRequest.requiresOnDeviceRecognition = true
-		
-		guard let recordingFormat = inputNode?.outputFormat(forBus: 0) else { return }
-		inputNode?.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer: AVAudioPCMBuffer, when: AVAudioTime) in
-			self.recognitionRequest?.append(buffer)
-		}
-		
-		recognitionTask = buildRecognitionTask()
-		
-		if recognitionTask == nil {
-			stop()
-			throw Recorder.RecorderError.unableToCreateRecognitionTask
-		}
-		audioEngine.prepare()
-		try audioEngine.start()
-		isRunning = true
-	}
-	
-	@MainActor public func stop() {
-		currentTranscription.finalize()
-		
-		if isRunning {
-			audioEngine.stop()
-			isRunning = false
-		}
-		
-		inputNode?.removeTap(onBus: 0)
-		recognitionRequest?.endAudio()
-		
-		recognitionRequest = nil
-		inputNode = nil
-		recognitionTask?.cancel()
-		recognitionTask = nil
-	}
-	
-	var lastString = ""
-	var fullTranscript = ""
 	
 	func buildRecognitionTask() -> SFSpeechRecognitionTask? {
 		guard let recognitionRequest else { return nil }
@@ -122,7 +78,18 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 					self.fullTranscript += best.formattedString.dropFirst(self.lastString.count) + " "
 				}
 				self.lastString = best.formattedString
-				self.textCallback?(self.lastString, confidence)
+				self.textCallback?(.phrase(self.lastString, confidence))
+				if confidence == 0 {
+					if #available(iOS 16.0, *) {
+						self.pauseTask?.cancel()
+						self.pauseTask = Task {
+							do {
+								try await Task.sleep(for: .seconds(self.pauseDuration))
+								self.textCallback?(.pause)
+							} catch { }
+						}
+					}
+				}
 			}
 		}
 
@@ -156,6 +123,5 @@ extension SpeechTranscriptionist: SFSpeechRecognitionTaskDelegate {
 
 extension SpeechTranscriptionist: SFSpeechRecognizerDelegate {
 	public func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
-		print("Speech recognizer availability changed to \(available)")
 	}
 }

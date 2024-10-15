@@ -9,28 +9,31 @@ import Suite
 
 public struct SpeechRecognitionView: View {
 	@State var isRunning = false
-	let fixedIsRunning: Bool?
+	@Binding var fixedIsRunning: Bool
+	let useState: Bool
 	
-	public init(isRunning: Bool? = nil) {
-		fixedIsRunning = isRunning
+	public init(isRunning: Binding<Bool>? = nil) {
+		_fixedIsRunning = isRunning ?? .constant(false)
+		useState = isRunning == nil
 	}
 	
 	var imageName: String {
 		if Gestalt.isOnSimulator { return "mic.slash.circle" }
+		let binding = useState ? $isRunning : $fixedIsRunning
 		
-		if (fixedIsRunning ?? isRunning) { return "stop.circle.fill" }
+		if binding.wrappedValue { return "stop.circle.fill" }
 		return "mic.circle.fill"
 	}
 	
 	public var body: some View {
-		SpeechRecognitionContainer(running: fixedIsRunning ?? isRunning) { transcript in
+		SpeechRecognitionContainer(running: $isRunning) { transcript in
 			HStack {
 				ScrollView {
 					TranscribedText(transcript: transcript)
 				}
 				.frame(maxWidth: .infinity, alignment: .leading)
 				
-				if fixedIsRunning == nil {
+				if useState {
 					AsyncButton(action: { try await toggle() }) {
 						Image(systemName: imageName)
 							.font(.system(size: 32))
