@@ -9,7 +9,7 @@ import Suite
 import AVFoundation
 import Speech
 
-public class SpeechTranscriptionist: NSObject, ObservableObject {
+@MainActor public class SpeechTranscriptionist: NSObject, ObservableObject {
 	public static let instance = SpeechTranscriptionist()
 	
 	let audioEngine = AVAudioEngine()
@@ -52,7 +52,7 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 		if running {
 			try await start()
 		} else {
-			await stop()
+			stop()
 		}
 	}
 	
@@ -99,29 +99,29 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 
 
 extension SpeechTranscriptionist: SFSpeechRecognitionTaskDelegate {
-	public func speechRecognitionDidDetectSpeech(_ task: SFSpeechRecognitionTask) {
+	nonisolated public func speechRecognitionDidDetectSpeech(_ task: SFSpeechRecognitionTask) {
 		print("Detected speech")
 	}
 	
-	public func speechRecognitionTaskFinishedReadingAudio(_ task: SFSpeechRecognitionTask) {
+	nonisolated public func speechRecognitionTaskFinishedReadingAudio(_ task: SFSpeechRecognitionTask) {
 		print("speechRecognitionTaskFinishedReadingAudio")
 	}
 	
-	public func speechRecognitionTaskWasCancelled(_ task: SFSpeechRecognitionTask) {
+	nonisolated public func speechRecognitionTaskWasCancelled(_ task: SFSpeechRecognitionTask) {
 		print("speechRecognitionTaskWasCancelled")
 	}
 	
 
-	public func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishRecognition result: SFSpeechRecognitionResult) {
+	nonisolated public func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishRecognition result: SFSpeechRecognitionResult) {
 		print("Done Recognizing: \(result.bestTranscription.formattedString)")
 	}
 	
-	public func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishSuccessfully successfully: Bool) {
+	nonisolated public func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishSuccessfully successfully: Bool) {
 		print("Done recognizing successfully: \(successfully)")
 	}
 }
 
 extension SpeechTranscriptionist: SFSpeechRecognizerDelegate {
-	public func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
+	nonisolated public func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
 	}
 }

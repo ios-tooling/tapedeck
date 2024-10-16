@@ -9,7 +9,7 @@ import SwiftUI
 
 public struct SpeechRecognitionContainer<Content: View>: View {
 	let content: (SpeechTranscription) -> Content
-	@StateObject var transcript = SpeechTranscriptionist()
+	@ObservedObject var transcript = SpeechTranscriptionist.instance
 	@Binding var text: String
 	@Binding var isRunning: Bool
 	var pauseCallback: (() -> Void)?
@@ -44,6 +44,7 @@ public struct SpeechRecognitionContainer<Content: View>: View {
 		VStack {
 			content(transcript.currentTranscription)
 		}
+		.environmentObject(transcript)
 		.onChange(of: isRunning) { newValue in setup(isRunning: newValue) }
 		.onAppear { setup(isRunning: isRunning) }
 		.onChange(of: transcript.currentTranscription) { newTranscript in

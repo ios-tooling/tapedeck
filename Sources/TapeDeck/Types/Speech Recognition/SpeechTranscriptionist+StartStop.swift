@@ -11,13 +11,14 @@ import Speech
 
 extension SpeechTranscriptionist {
 	@MainActor public func start(textCallback: ((TranscriptionResult) -> Void)? = nil) async throws {
+		self.textCallback = textCallback
+
 		if isRunning { return }
 		if Gestalt.isOnSimulator { throw Recorder.RecorderError.notImplementedOnSimulator }
 		
 		if await !requestPermission() { return }
 		inputNode = audioEngine.inputNode
 		
-		self.textCallback = textCallback
 		self.fullTranscript = ""
 		self.currentTranscription = SpeechTranscription()
 		recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
@@ -39,6 +40,7 @@ extension SpeechTranscriptionist {
 		audioEngine.prepare()
 		try audioEngine.start()
 		isRunning = true
+		objectWillChange.send()
 	}
 	
 	@MainActor public func stop() {
@@ -56,6 +58,7 @@ extension SpeechTranscriptionist {
 		inputNode = nil
 		recognitionTask?.cancel()
 		recognitionTask = nil
+		objectWillChange.send()
 	}
 
 }
