@@ -12,12 +12,12 @@ import Suite
 public actor OutputSingleFileRecording: RecorderOutput, CustomStringConvertible {
 	nonisolated let url: URL
 	
-	var assetWriter: AVAssetWriter!
+	public var assetWriter: AVAssetWriter!
 	var assetWriterInput: AVAssetWriterInput!
 	var sampleRate: Int64 = 44100
 	var samplesRead: Int64 = 0
 	var recordingDuration: TimeInterval { TimeInterval(samplesRead / sampleRate) }
-	var outputType = Recorder.AudioFileType.wav16k
+	public var outputType = Recorder.AudioFileType.wav16k
 	var internalType = Recorder.AudioFileType.wav48k
 	
 	public var containerURL: URL? { url }

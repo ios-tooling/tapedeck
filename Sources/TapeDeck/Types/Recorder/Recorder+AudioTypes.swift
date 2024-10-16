@@ -9,13 +9,13 @@ import Foundation
 import AVFoundation
 
 extension Recorder {
-	public struct AudioFileType: Equatable {
-		var fileExtension: String
-		var fileType: AVFileType
+	public struct AudioFileType: Equatable, Sendable {
+		public var fileExtension: String
+		public var fileType: AVFileType
 		
 		static var defaultSampleRate = 44100
 		
-		var settings: [String: Any]
+		var settings: [String: Sendable]
 		var canConvertTo: Bool { formatID != nil }
 	
 		var formatID: AudioFormatID?
