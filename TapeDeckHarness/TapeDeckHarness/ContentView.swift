@@ -31,7 +31,7 @@ struct ContentView: View {
 				.frame(width: 45, height: 45)
 
 			SoundLevelsView()
-			SpeechRecognitionView(isRunning: isRunning)
+			SpeechRecognitionView(isRunning: $isRunning)
 				.overlay {
 					if !isRunning { Text("Not Recording").bold().opacity(0.25) }
 				}
