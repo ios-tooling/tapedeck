@@ -16,6 +16,7 @@ public actor OutputSingleFileRecording: RecorderOutput, CustomStringConvertible 
 	var assetWriterInput: AVAssetWriterInput!
 	var sampleRate: Int64 = 44100
 	var samplesRead: Int64 = 0
+	var savedURL: URL?
 	var recordingDuration: TimeInterval { TimeInterval(samplesRead / sampleRate) }
 	public var outputType = Recorder.AudioFileType.wav16k
 	var internalType = Recorder.AudioFileType.wav48k
@@ -51,13 +52,16 @@ public actor OutputSingleFileRecording: RecorderOutput, CustomStringConvertible 
 		assetWriter.startSession(atSourceTime: CMTime.zero)
 	}
 	
-	public func endRecording() async throws {
+	public func endRecording() async throws -> URL? {
+		if assetWriterInput == nil { return savedURL ?? containerURL }
 		await closeCurrentWriter()
 		
 		if internalType != outputType {
 			let converter = await AudioFileConverter(source: url, to: outputType, at: outputType.url(from: url), progress: nil)
-			try await converter.convert()
+			savedURL = try await converter.convert()
+			return savedURL
 		}
+		return containerURL
 	}
 	
 	nonisolated public var description: String {

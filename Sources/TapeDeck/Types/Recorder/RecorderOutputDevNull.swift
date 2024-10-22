@@ -22,6 +22,7 @@ public actor OutputDevNull: RecorderOutput {
 		
 	}
 
-	public func endRecording() async throws {
+	public func endRecording() async throws -> URL? {
+		nil
 	}
 }

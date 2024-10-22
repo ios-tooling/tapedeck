@@ -141,7 +141,7 @@ import Accelerate
 				_ = try await handler.endRecording()
 			}
 		} catch {
-			print("Error when ending the recording: \(error)")
+			print("Error stopping the recording: \(error)")
 		}
 		activeTranscript?.save()
 		removeSamplesHandler(output)

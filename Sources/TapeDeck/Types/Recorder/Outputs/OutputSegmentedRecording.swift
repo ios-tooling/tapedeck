@@ -75,10 +75,11 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 		try self.createWriter(startingAt: 0)
 	}
 	
-	public func endRecording() async throws {
+	public func endRecording() async throws -> URL? {
 		await closeCurrentWriter(writer: assetWriter, input: assetWriterInput, url: currentURL)
 		assetWriterInput = nil
 		assetWriter = nil
+		return containerURL
 	}
 	
 	public var recordingChunkURLs: [URL] {

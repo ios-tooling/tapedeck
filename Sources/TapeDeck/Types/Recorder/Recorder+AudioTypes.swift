@@ -22,6 +22,7 @@ extension Recorder {
 		var outputID: AudioFormatID?
 
 		var sampleRate: Int
+		public let mimeType: String
 
 		func url(from url: URL) -> URL {
 			url.deletingPathExtension().appendingPathExtension(fileExtension)
@@ -31,7 +32,7 @@ extension Recorder {
 			lhs.fileType == rhs.fileType
 		}
 
-		public static var m4a: AudioFileType = {
+		public static let m4a: AudioFileType = {
 			var channelLayout = AudioChannelLayout()
 			channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
 			
@@ -43,10 +44,10 @@ extension Recorder {
 				AVChannelLayoutKey: NSData(bytes: &channelLayout, length: MemoryLayout<AudioChannelLayout>.size)
 			]
 
-			return AudioFileType(fileExtension: "m4a", fileType: .m4a, settings: settings, formatID: kAudioFormatMPEG4AAC, outputID: kAudioFileM4AType, sampleRate: AudioFileType.defaultSampleRate)
+			return AudioFileType(fileExtension: "m4a", fileType: .m4a, settings: settings, formatID: kAudioFormatMPEG4AAC, outputID: kAudioFileM4AType, sampleRate: AudioFileType.defaultSampleRate, mimeType: "audio/mp4")
 		}()
 		
-		public static var wav16k: AudioFileType = {
+		public static let wav16k: AudioFileType = {
 			var channelLayout = AudioChannelLayout()
 			channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
 			
@@ -71,10 +72,10 @@ extension Recorder {
 //				AVChannelLayoutKey: NSData(bytes: &channelLayout, length: MemoryLayout<AudioChannelLayout>.size)
 			]
 
-			return AudioFileType(fileExtension: "wav", fileType: .wav, settings: settings, sampleRate: 16_000)
+			return AudioFileType(fileExtension: "wav", fileType: .wav, settings: settings, sampleRate: 16_000, mimeType: "audio/wav")
 		}()
 
-		public static var wav48k: AudioFileType = {
+		public static let wav48k: AudioFileType = {
 			var channelLayout = AudioChannelLayout()
 			channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
 			
@@ -99,10 +100,10 @@ extension Recorder {
 //				AVChannelLayoutKey: NSData(bytes: &channelLayout, length: MemoryLayout<AudioChannelLayout>.size)
 			]
 
-			return AudioFileType(fileExtension: "wav", fileType: .wav, settings: settings, sampleRate: 16_000)
+			return AudioFileType(fileExtension: "wav", fileType: .wav, settings: settings, sampleRate: 16_000, mimeType: "audio/wav")
 		}()
 
-		public static var mp3: AudioFileType = {
+		public static let mp3: AudioFileType = {
 			var channelLayout = AudioChannelLayout()
 			channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
 			
@@ -117,7 +118,7 @@ extension Recorder {
 				AVChannelLayoutKey: NSData(bytes: &channelLayout, length: MemoryLayout<AudioChannelLayout>.size)
 			]
 
-			return AudioFileType(fileExtension: "mp3", fileType: .mp3, settings: settings, sampleRate: AudioFileType.defaultSampleRate)
+			return AudioFileType(fileExtension: "mp3", fileType: .mp3, settings: settings, sampleRate: AudioFileType.defaultSampleRate, mimeType: "audio/mp3")
 		}()
 	}
 }

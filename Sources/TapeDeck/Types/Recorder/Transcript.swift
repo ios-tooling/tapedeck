@@ -8,6 +8,12 @@
 import Suite
 import AVFoundation
 
+extension URL {
+	var transcriptURL: URL {
+		self.deletingPathExtension().appendingPathExtension("transcript")
+	}
+}
+
 public class Transcript: Codable, Identifiable, CustomStringConvertible {
 	public var soundLevels: [SoundLevel] = []
 	public var segments: [Segment] = []
@@ -38,7 +44,7 @@ public class Transcript: Codable, Identifiable, CustomStringConvertible {
 	}
 	
 	public static func load(in url: URL) throws -> Transcript {
-		let jsonURL = url.appendingPathComponent(transcriptFilename, conformingTo: .json)
+		let jsonURL = url.transcriptURL
 		if let data = try? Data(contentsOf: jsonURL), let transcript = try? JSONDecoder().decode(Self.self, from: data) {
 			transcript.saveURL = jsonURL
 			return transcript
@@ -48,11 +54,11 @@ public class Transcript: Codable, Identifiable, CustomStringConvertible {
 	}
 	
 	init(forOutputURL url: URL) {
-		saveURL = url.appendingPathComponent(Self.transcriptFilename, conformingTo: .json)
+		saveURL = url.transcriptURL
 	}
 	
 	init(container url: URL) {
-		saveURL = url.appendingPathComponent(Self.transcriptFilename, conformingTo: .json)
+		saveURL = url.transcriptURL
 		Task { await self.load(url: url) }
 	}
 	
