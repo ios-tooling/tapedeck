@@ -18,6 +18,9 @@ struct LongTermRecordingView: View {
 	@State var listingRecordings = false
 	
 	func start() async throws {
+		_ = try? await Microphone.instance.stop()
+		try? await Task.sleep(for: .seconds(0.2))
+ 
 		url = root.appendingPathComponent(Date.now.formatted(.iso8601).replacingOccurrences(of: ":", with: ";"))
 		
 		recording = OutputSegmentedRecording(in: url!, outputType: .m4a, bufferDuration: 5)
@@ -40,17 +43,22 @@ struct LongTermRecordingView: View {
 				.sheet(isPresented: $listingRecordings) { RecordingList(url: root, selectedRecording: $recording) }
 		}
 		
+		SoundLevelsView(verticallyCentered: true, segmentWidth: 1, spacerWidth: 2)
+			.frame(height: 200)
+			.task { _ = try? await Microphone.instance.start() }
+		
 		if let recording {
 			HStack {
 				Text("Recording")
 			}
-			AsyncButton(action: { try await stop() }) {
+			AsyncButton(action: {
+				try await stop()
+				try? await Task.sleep(for: .seconds(0.2))
+				_ = try? await Microphone.instance.start()
+			}) {
 				Image(systemName: "stop.circle.fill")
 					.foregroundStyle(.red)
 			}
-			
-			SoundLevelsView()
-				.frame(height: 100)
 			
 			SegmentedRecordingFileList(recording: recording)
 			

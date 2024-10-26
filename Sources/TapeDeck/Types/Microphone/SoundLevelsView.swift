@@ -9,57 +9,21 @@ import SwiftUI
 
 public struct SoundLevelsView: View {
 	@ObservedObject var history = Microphone.instance.history
-	let bottomAligned: Bool
-	let showSpacer: Bool
+	let verticallyCentered: Bool
+	let segmentWidth: CGFloat?
+	let spacerWidth: CGFloat
 
-	public init(bottomAligned: Bool = false, showSpacers: Bool = false) {
-		self.bottomAligned = bottomAligned
-		self.showSpacer = showSpacers
+	public init(verticallyCentered: Bool = false, segmentWidth: CGFloat? = nil, spacerWidth: CGFloat = 0.0) {
+		self.verticallyCentered = verticallyCentered
+		self.spacerWidth = spacerWidth
+		self.segmentWidth = segmentWidth
 	}
 	
 	public var body: some View {
-		let bars = history.recent(500)
+		let bars = history.recent(100)
 		
-		HStack(spacing: 0) {
-			ForEach(bars.indices, id: \.self) { idx in
-				Bar(volume: bars[idx], bottomAligned: bottomAligned, showSpacer: showSpacer)
-			}
-		}
-		.ignoresSafeArea()
-	}
-	
-	struct Bar: View {
-		let volume: Volume
-		let bottomAligned: Bool
-		let showSpacer: Bool
-		
-		var body: some View {
-			ZStack {
-				Color.clear
-			}
-			.frame(maxWidth: 4)
-			.overlay(
-				GeometryReader { geo in
-					VStack(spacing: 0) {
-						Spacer(minLength: 0)
-						
-						HStack(spacing: 0) {
-							Rectangle()
-								.fill(.red)
-								.frame(height: geo.height * pow(volume.unit, 8))
-							
-							if showSpacer {
-								Rectangle()
-									.fill(.clear)
-									.frame(height: 1)
-							}
-						}
-
-						if !bottomAligned { Spacer(minLength: 0) }
-					}
-				}
-			)
-		}
+		BarLevelsView(levels: bars, verticallyCentered: verticallyCentered, segmentWidth: segmentWidth, spacerWidth: spacerWidth)
+			.ignoresSafeArea()
 	}
 }
 

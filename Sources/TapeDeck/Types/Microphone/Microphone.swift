@@ -105,6 +105,8 @@ import OSLog
 		} else {
 			activeListener = nil
 		}
+		
+		if activeListener == nil { isListening = false }
 	}
 
 	@discardableResult
@@ -130,7 +132,6 @@ import OSLog
 		audioRecorder.delegate = self
 		audioRecorder.isMeteringEnabled = true
 		
-		self.setupTimer()
 		if audioRecorder.record() {
 			isListening = true
 			setupTimer()
@@ -171,6 +172,7 @@ import OSLog
 		let environmentDBAvgSPL = Volume(detectedRoomVolume: Double(avgFullScale)) ?? .silence
 	
 		self.history.record(volume: environmentDBAvgSPL)
+		objectWillChange.send()
 	}
 	
 	
