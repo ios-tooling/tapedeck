@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  AVAudioSessionWrapper.swift
 //
 //
 //  Created by Ben Gottlieb on 9/10/23.
@@ -8,11 +8,13 @@
 import Suite
 import AVFoundation
 
-class AVAudioSessionWrapper {
-	static let instance = AVAudioSessionWrapper()
+public class AVAudioSessionWrapper {
+	public static let instance = AVAudioSessionWrapper()
 	
 	let session = AVAudioSession.sharedInstance()
 	var activeCount = 0
+	
+	public var defaultToSpeaker = true
 	
 	public var hasRecordingPermissions = CurrentValueSubject<Bool, Never>(AVAudioSession.sharedInstance().recordPermission == .granted)
 
@@ -28,16 +30,20 @@ class AVAudioSessionWrapper {
 		}
 	}
 
-	func start() throws {
+	public func start() throws {
 		if activeCount > 0 {
 			activeCount += 1
 		}
-		try session.setCategory(.playAndRecord, options: [.allowBluetoothA2DP, .allowAirPlay, .defaultToSpeaker, .duckOthers])
+		
+		var options: AVAudioSession.CategoryOptions = [.allowBluetoothA2DP, .allowBluetooth]
+		
+		if defaultToSpeaker { options.insert(.defaultToSpeaker) }
+		try session.setCategory(.playAndRecord, options: options)
 		try session.setActive(true)
 		activeCount = 1
 	}
 	
-	func stop() throws {
+	public func stop() throws {
 		if activeCount == 1 {
 			try session.setActive(false)
 		}

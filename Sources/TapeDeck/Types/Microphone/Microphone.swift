@@ -29,7 +29,6 @@ import OSLog
 	}
 	
 	public let history = History()
-	let recordingSession = AVAudioSession.sharedInstance()
 	let audioRecorder = try! AVAudioRecorder(url: URL(fileURLWithPath: "/dev/null"), settings: AudioSettings.m4a.settings)
 	private var cancelBag: Set<AnyCancellable> = []
 

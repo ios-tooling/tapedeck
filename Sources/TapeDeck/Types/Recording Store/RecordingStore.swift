@@ -68,9 +68,11 @@ import AVFoundation
 		updateRecordings()
 	}
 	
-	public func addAudio(at url: URL) {
-		externalRecordings.append(SavedRecording(url: url))
+	@discardableResult public func addAudio(at url: URL) -> SavedRecording {
+		let new = SavedRecording(url: url)
+		externalRecordings.append(new)
 		self.updateRecordings()
+		return new
 	}
 	
 	public func addAudio(at urls: [URL]) {

@@ -74,7 +74,7 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		}
 	}
 	
-	public init(url: URL, transcript: Transcript? = nil) {
+	init(url: URL, transcript: Transcript? = nil) {
 		self.url = url
 		self.transcript = transcript
 		
