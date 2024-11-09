@@ -44,8 +44,7 @@ public class Transcript: Codable, Identifiable, CustomStringConvertible {
 	
 	struct NoRecordingSegmentsFoundError: Error { }
 	public func buildRecording() async throws -> OutputSegmentedRecording {
-		guard let url = try segmentURLs.first else { throw NoRecordingSegmentsFoundError() }
-		let recording = OutputSegmentedRecording(in: url)
+		let recording = OutputSegmentedRecording(in: saveURL.deletingPathExtension())
 		await recording.prepare()
 		return recording
 	}
