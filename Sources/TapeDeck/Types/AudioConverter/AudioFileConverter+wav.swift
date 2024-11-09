@@ -9,11 +9,11 @@ import Foundation
 import AVFoundation
 
 extension AudioFileConverter {
-	public static func convert(m4a url: URL, toWAV outputWAV: URL?, deleteSource: Bool = false) async throws {
+	public static func convert(m4a url: URL, toWAV outputURL: URL?, deleteSource: Bool = false) async throws {
 		var error: OSStatus = noErr
 		var destinationFile: ExtAudioFileRef?
 		var sourceFile: ExtAudioFileRef?
-		let outputURL = outputWAV ?? url.deletingPathExtension().appendingPathExtension("wav")
+		let outputURL = outputURL ?? url.deletingPathExtension().appendingPathExtension("wav")
 
 		var srcFormat = AudioStreamBasicDescription()
 		var dstFormat = AudioStreamBasicDescription()

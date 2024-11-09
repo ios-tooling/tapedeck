@@ -19,7 +19,12 @@ public struct SegmentedRecordingFileList: View {
 	public var body: some View {
 		List {
 			ForEach(chunks) { chunk in
-				Button(action: { chunk.play() }) {
+				Button(action: {
+					chunk.play()
+					AudioContext.load(fromAudioURL: chunk.url) { audioContext in
+						print(audioContext)
+					}
+				}) {
 					Text(chunk.timeDescription)
 				}
 			}

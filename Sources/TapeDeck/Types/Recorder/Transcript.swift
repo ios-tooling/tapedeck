@@ -33,8 +33,19 @@ public class Transcript: Codable, Identifiable, CustomStringConvertible {
 		duration.durationString(style: .minutes, showLeadingZero: true)
 	}
 	
+	var  segmentURLs: [URL] {
+		get throws {
+			let directory = saveURL.deletingPathExtension()
+			guard directory.isFileURL else { return [] }
+			
+			return try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
+		}
+	}
+	
+	struct NoRecordingSegmentsFoundError: Error { }
 	public func buildRecording() async throws -> OutputSegmentedRecording {
-		let recording = OutputSegmentedRecording(in: saveURL.deletingLastPathComponent() )
+		guard let url = try segmentURLs.first else { throw NoRecordingSegmentsFoundError() }
+		let recording = OutputSegmentedRecording(in: url)
 		await recording.prepare()
 		return recording
 	}
