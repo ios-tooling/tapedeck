@@ -5,7 +5,7 @@
 //  Created by Ben Gottlieb on 10/13/24.
 //
 
-import SwiftUI
+import Suite
 import TapeDeck
 
 public struct SegmentedRecordingFileList: View {
@@ -19,14 +19,7 @@ public struct SegmentedRecordingFileList: View {
 	public var body: some View {
 		List {
 			ForEach(chunks) { chunk in
-				Button(action: {
-					chunk.play()
-					AudioContext.load(fromAudioURL: chunk.url) { audioContext in
-						print(audioContext)
-					}
-				}) {
-					Text(chunk.timeDescription)
-				}
+				Row(chunk: chunk)
 			}
 		}
 		.task {
@@ -35,5 +28,28 @@ public struct SegmentedRecordingFileList: View {
 		.onReceive(recording.objectWillChange) { _ in
 			Task { await updateChunks() }
 		}
+	}
+	
+	struct Row: View {
+		let chunk: SegmentedRecordingChunkInfo
+		@State var volumes: [Volume]?
+		
+		var body: some View {
+			AsyncButton(action: {
+					chunk.play()
+			}) {
+				VStack {
+					Text(chunk.timeDescription)
+						
+					if let volumes {
+						BarLevelsView(levels: volumes, verticallyCentered: true, segmentWidth: 1, spacerWidth: 2)
+					}
+				}
+			}
+			.task {
+				volumes = try? await chunk.extractVolumes(count: 100)
+			}
+		}
+		
 	}
 }

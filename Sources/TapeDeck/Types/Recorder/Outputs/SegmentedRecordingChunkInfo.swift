@@ -28,6 +28,10 @@ public struct SegmentedRecordingChunkInfo: Comparable, Sendable, Identifiable {	
 		RecordingPlayer.instance.player.play()
 	}
 	
+	public func extractVolumes(count: Int) async throws -> [Volume]? {
+		try await url.extractVolumes(count: count)
+	}
+	
 	init?(url: URL) {
 		self.url = url
 		

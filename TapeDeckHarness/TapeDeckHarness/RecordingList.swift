@@ -34,7 +34,10 @@ struct RecordingList: View {
 			do {
 				let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
 				
-				transcripts = urls.compactMap { try? Transcript.load(in: $0) }
+				transcripts = urls.compactMap {
+					if $0.pathExtension != "transcript" { return nil }
+					return try? Transcript.load(in: $0)
+				}
 			} catch {
 				print("Failed to list audio files: \(error)")
 			}

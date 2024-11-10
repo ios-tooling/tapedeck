@@ -7,11 +7,18 @@
 
 import SwiftUI
 
-struct BarLevelsView: View {
+public struct BarLevelsView: View {
 	let levels: [Volume]
 	var verticallyCentered = true
 	var segmentWidth: CGFloat?
 	var spacerWidth = 0.0
+	
+	public init(levels: [Volume], verticallyCentered: Bool = true, segmentWidth: CGFloat? = nil, spacerWidth: Double = 0.0) {
+		self.levels = levels
+		self.verticallyCentered = verticallyCentered
+		self.segmentWidth = segmentWidth
+		self.spacerWidth = spacerWidth
+	}
 	
 	public var body: some View {
 		HStack(spacing: 0) {

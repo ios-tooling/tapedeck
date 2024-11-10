@@ -8,14 +8,21 @@
 import AVFoundation
 import Accelerate
 
-extension URL {
-	func extractSamples(count: Int) -> [Float]? {
-//		let context = AudioContext.load(fromAudioURL: self)
-		nil
+public extension URL {
+	func extractLevels(count: Int) async throws -> [Float]? {
+		let context = try await AudioContext.load(fromAudioURL: self)
+		return context.render(targetSamples: count)
+	}
+	
+	func extractVolumes(count: Int) async throws -> [Volume]? {
+		guard let levels = try await extractLevels(count: count) else { return nil }
+		
+		return levels.map { Volume.dB(Double($0 + 110)) }
 	}
 }
 
-/// Holds audio information used for building waveforms
+fileprivate let noiseFloor: Float = -80
+
 public final class AudioContext {
 	
 	/// The audio asset URL used to load the context
@@ -30,6 +37,9 @@ public final class AudioContext {
 	// Loaded assetTrack
 	public let assetTrack: AVAssetTrack
 	
+	struct UnableToLoadAVAssetTrackError: Error { }
+	struct UnknownSampleExtractionError: Error { }
+	
 	private init(audioURL: URL, totalSamples: Int, asset: AVAsset, assetTrack: AVAssetTrack) {
 		self.audioURL = audioURL
 		self.totalSamples = totalSamples
@@ -37,36 +47,35 @@ public final class AudioContext {
 		self.assetTrack = assetTrack
 	}
 	
-	public static func load(fromAudioURL audioURL: URL, completionHandler: @escaping (_ audioContext: AudioContext?) -> ()) {
+	public static func load(fromAudioURL audioURL: URL) async throws -> AudioContext {
 		let asset = AVURLAsset(url: audioURL, options: [AVURLAssetPreferPreciseDurationAndTimingKey: NSNumber(value: true as Bool)])
 		
 		guard let assetTrack = asset.tracks(withMediaType: AVMediaType.audio).first else {
-			fatalError("Couldn't load AVAssetTrack")
+			throw UnableToLoadAVAssetTrackError()
 		}
 		
+		try await asset.loadValues(forKeys: ["duration"])
 		
-		asset.loadValuesAsynchronously(forKeys: ["duration"]) {
-			var error: NSError?
-			let status = asset.statusOfValue(forKey: "duration", error: &error)
-			switch status {
-			case .loaded:
-				guard
-					let formatDescriptions = assetTrack.formatDescriptions as? [CMAudioFormatDescription],
-					let audioFormatDesc = formatDescriptions.first,
-					let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(audioFormatDesc)
-				else { break }
-				
-				let totalSamples = Int((asbd.pointee.mSampleRate) * Float64(asset.duration.value) / Float64(asset.duration.timescale))
-				let audioContext = AudioContext(audioURL: audioURL, totalSamples: totalSamples, asset: asset, assetTrack: assetTrack)
-				completionHandler(audioContext)
-				return
-				
-			case .failed, .cancelled, .loading, .unknown:
-				print("Couldn't load asset: \(error?.localizedDescription ?? "Unknown error")")
+		var error: NSError?
+		let status = asset.statusOfValue(forKey: "duration", error: &error)
+		switch status {
+		case .loaded:
+			guard
+				let formatDescriptions = assetTrack.formatDescriptions as? [CMAudioFormatDescription],
+				let audioFormatDesc = formatDescriptions.first,
+				let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(audioFormatDesc)
+			else {
+				throw UnknownSampleExtractionError()
 			}
 			
-			completionHandler(nil)
+			let totalSamples = Int((asbd.pointee.mSampleRate) * Float64(asset.duration.value) / Float64(asset.duration.timescale))
+			let audioContext = AudioContext(audioURL: audioURL, totalSamples: totalSamples, asset: asset, assetTrack: assetTrack)
+			return audioContext
+			
+		case .failed, .cancelled, .loading, .unknown:
+			throw error ?? UnknownSampleExtractionError()
 		}
+		
 	}
 	
 	func render(targetSamples: Int = 100) -> [Float]? {
@@ -219,5 +228,4 @@ public final class AudioContext {
 	}
 }
 
-fileprivate let noiseFloor: Float = -80
 
