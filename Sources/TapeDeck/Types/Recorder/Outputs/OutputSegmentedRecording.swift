@@ -12,7 +12,7 @@ import Suite
 	public static let shared = AudioActor()
 }
 
-public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
+public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatable {
 	var assetWriter: AVAssetWriter!
 	var assetWriterInput: AVAssetWriterInput!
 	var chunkDuration: TimeInterval = 5
@@ -31,6 +31,8 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput {
 	nonisolated let durationLimit: TimeInterval?
 
 	public var containerURL: URL?
+	
+	public static func ==(lhs: OutputSegmentedRecording, rhs: OutputSegmentedRecording) -> Bool { lhs === rhs }
 	
 	public init(in url: URL, outputType: Recorder.AudioFileType = .m4a, bufferDuration: TimeInterval = 30, ringDuration: TimeInterval? = nil) {
 		self.containerURL = url

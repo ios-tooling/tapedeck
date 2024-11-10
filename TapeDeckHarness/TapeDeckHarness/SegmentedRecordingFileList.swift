@@ -25,6 +25,9 @@ public struct SegmentedRecordingFileList: View {
 		.task {
 			await updateChunks()
 		}
+		.onChange(of: recording) {
+			Task { await updateChunks() }
+		}
 		.onReceive(recording.objectWillChange) { _ in
 			Task { await updateChunks() }
 		}
@@ -32,22 +35,15 @@ public struct SegmentedRecordingFileList: View {
 	
 	struct Row: View {
 		let chunk: SegmentedRecordingChunkInfo
-		@State var volumes: [Volume]?
 		
 		var body: some View {
-			AsyncButton(action: {
+			Button(action: {
 					chunk.play()
 			}) {
 				VStack {
 					Text(chunk.timeDescription)
-						
-					if let volumes {
-						BarLevelsView(levels: volumes, verticallyCentered: true, segmentWidth: 1, spacerWidth: 2)
-					}
+					BarLevelsView(url: chunk.url)
 				}
-			}
-			.task {
-				volumes = try? await chunk.extractVolumes(count: 100)
 			}
 		}
 		

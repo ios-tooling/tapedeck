@@ -8,13 +8,22 @@
 import SwiftUI
 
 public struct BarLevelsView: View {
-	let levels: [Volume]
+	@State var levels: [Volume]?
+	let url: URL?
 	var verticallyCentered = true
 	var segmentWidth: CGFloat?
 	var spacerWidth = 0.0
 	
-	public init(levels: [Volume], verticallyCentered: Bool = true, segmentWidth: CGFloat? = nil, spacerWidth: Double = 0.0) {
-		self.levels = levels
+	public init(levels: [Volume], verticallyCentered: Bool = true, segmentWidth: CGFloat? = 1, spacerWidth: Double = 2) {
+		_levels = .init(initialValue: levels)
+		url = nil
+		self.verticallyCentered = verticallyCentered
+		self.segmentWidth = segmentWidth
+		self.spacerWidth = spacerWidth
+	}
+	
+	public init(url: URL, verticallyCentered: Bool = true, segmentWidth: CGFloat? = 1, spacerWidth: Double = 2) {
+		self.url = url
 		self.verticallyCentered = verticallyCentered
 		self.segmentWidth = segmentWidth
 		self.spacerWidth = spacerWidth
@@ -22,11 +31,22 @@ public struct BarLevelsView: View {
 	
 	public var body: some View {
 		HStack(spacing: 0) {
-			ForEach(levels.indices, id: \.self) { idx in
-				Bar(volume: levels[idx], verticallyCentered: verticallyCentered, segmentWidth: segmentWidth, spacerWidth: spacerWidth)
+			if let levels {
+				ForEach(levels.indices, id: \.self) { idx in
+					Bar(volume: levels[idx], verticallyCentered: verticallyCentered, segmentWidth: segmentWidth, spacerWidth: spacerWidth)
+				}
 			}
 		}
 		.ignoresSafeArea()
+		.task {
+			if let url {
+				do {
+					levels = try await url.extractVolumes(count: 100)
+				} catch {
+					print("Failed to extract volumes from \(url.path): \(error)")
+				}
+			}
+		}
 	}
 	
 	struct Bar: View {
