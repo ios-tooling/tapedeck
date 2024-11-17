@@ -54,7 +54,7 @@ public final class AudioContext {
 			throw UnableToLoadAVAssetTrackError()
 		}
 		
-		try await asset.loadValues(forKeys: ["duration"])
+		await asset.loadValues(forKeys: ["duration"])
 		
 		var error: NSError?
 		let status = asset.statusOfValue(forKey: "duration", error: &error)
@@ -73,6 +73,8 @@ public final class AudioContext {
 			return audioContext
 			
 		case .failed, .cancelled, .loading, .unknown:
+			throw error ?? UnknownSampleExtractionError()
+		@unknown default:
 			throw error ?? UnknownSampleExtractionError()
 		}
 		

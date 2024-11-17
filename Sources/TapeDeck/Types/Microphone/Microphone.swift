@@ -109,10 +109,14 @@ import OSLog
 	}
 
 	@discardableResult
-	public func start() async throws -> Bool {
+	public func start() async throws -> Bool { try await start(resettingHistory: false) }
+
+	@discardableResult
+	public func start(resettingHistory: Bool) async throws -> Bool {
 		isPausedDueToInterruption = false
 		if isListening {
 			try await setActive(self)
+			if resettingHistory { history.reset() }
 			return true
 		}
 		

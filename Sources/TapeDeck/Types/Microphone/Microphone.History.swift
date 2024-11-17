@@ -53,7 +53,7 @@ extension Microphone {
 			return total / Double(recent.count)
 		}
 		
-		func reset() {
+		public func reset() {
 			self.data = []
 			startedAt = Date()
 		}
