@@ -9,20 +9,26 @@ import SwiftUI
 
 public struct BarLevelsView: View {
 	@State var levels: [Volume]?
+	let preloadedLevels: [Volume]?
 	let url: URL?
 	var verticallyCentered = true
 	var segmentWidth: CGFloat?
 	var spacerWidth = 0.0
+	var barColor = Color.red
 	
-	public init(levels: [Volume], verticallyCentered: Bool = true, segmentWidth: CGFloat? = 1, spacerWidth: Double = 2) {
-		_levels = .init(initialValue: levels)
+	public init(levels: [Volume], verticallyCentered: Bool = true, segmentWidth: CGFloat? = 1, spacerWidth: Double = 2, barColor: Color = .red) {
+		preloadedLevels = levels
 		url = nil
+		
+		self.barColor = barColor
 		self.verticallyCentered = verticallyCentered
 		self.segmentWidth = segmentWidth
 		self.spacerWidth = spacerWidth
 	}
 	
-	public init(url: URL, verticallyCentered: Bool = true, segmentWidth: CGFloat? = 1, spacerWidth: Double = 2) {
+	public init(url: URL, verticallyCentered: Bool = true, segmentWidth: CGFloat? = 1, spacerWidth: Double = 2, barColor: Color = .red) {
+		preloadedLevels = nil
+		self.barColor = barColor
 		self.url = url
 		self.verticallyCentered = verticallyCentered
 		self.segmentWidth = segmentWidth
@@ -31,9 +37,9 @@ public struct BarLevelsView: View {
 	
 	public var body: some View {
 		HStack(spacing: 0) {
-			if let levels {
+			if let levels = levels ?? preloadedLevels {
 				ForEach(levels.indices, id: \.self) { idx in
-					Bar(volume: levels[idx], verticallyCentered: verticallyCentered, segmentWidth: segmentWidth, spacerWidth: spacerWidth)
+					Bar(volume: levels[idx], verticallyCentered: verticallyCentered, segmentWidth: segmentWidth, spacerWidth: spacerWidth, barColor: barColor)
 				}
 			}
 		}
@@ -54,6 +60,7 @@ public struct BarLevelsView: View {
 		let verticallyCentered: Bool
 		let segmentWidth: CGFloat?
 		let spacerWidth: CGFloat
+		let barColor: Color
 
 		var body: some View {
 			ZStack {
@@ -67,8 +74,8 @@ public struct BarLevelsView: View {
 						
 						HStack(spacing: 0) {
 							RoundedRectangle(cornerRadius: (segmentWidth ?? 0) / 2)
-								.fill(.red)
-								.frame(width: segmentWidth, height: geo.height * pow(volume.unit, 8))
+								.fill(barColor)
+								.frame(width: segmentWidth, height: geo.height * min(pow(volume.unit, 8), 1))
 							
 							if spacerWidth > 0 {
 								Rectangle()

@@ -13,7 +13,7 @@ import AVFoundation
 import Journalist
 
 public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomStringConvertible, Comparable {
-	public let url: URL
+	public var url: URL
 	public var startedAt: Date = Date()
 	public var id: URL { url }
 	public var duration: TimeInterval? { transcript?.duration }
@@ -74,7 +74,14 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		}
 	}
 	
-	init(url: URL, transcript: Transcript? = nil) {
+	public move(to url: URL) throws {
+		if self.url == url { return }
+		
+		try FileManager.default.moveItem(at: self.url, to: url)
+		self.url = url
+	}
+	
+	public init(url: URL, transcript: Transcript? = nil) {
 		self.url = url
 		self.transcript = transcript
 		

@@ -13,7 +13,7 @@ public struct SoundLevelsView: View {
 	let segmentWidth: CGFloat?
 	let spacerWidth: CGFloat
 
-	public init(verticallyCentered: Bool = false, segmentWidth: CGFloat? = nil, spacerWidth: CGFloat = 0.0) {
+	public init(verticallyCentered: Bool = true, segmentWidth: CGFloat? = 1, spacerWidth: CGFloat = 2) {
 		self.verticallyCentered = verticallyCentered
 		self.spacerWidth = spacerWidth
 		self.segmentWidth = segmentWidth
