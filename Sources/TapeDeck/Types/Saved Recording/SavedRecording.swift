@@ -74,7 +74,7 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		}
 	}
 	
-	public move(to url: URL) throws {
+	public func move(to url: URL) throws {
 		if self.url == url { return }
 		
 		try FileManager.default.moveItem(at: self.url, to: url)
