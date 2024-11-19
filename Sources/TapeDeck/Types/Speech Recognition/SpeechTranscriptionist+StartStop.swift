@@ -16,7 +16,7 @@ extension SpeechTranscriptionist {
 		if isRunning { return }
 		if Gestalt.isOnSimulator { throw Recorder.RecorderError.notImplementedOnSimulator }
 		
-		if await !requestPermission() { return }
+		if await !requestPermission() { throw Recorder.RecorderError.noPermissions }
 		inputNode = audioEngine.inputNode
 		
 		self.fullTranscript = ""
