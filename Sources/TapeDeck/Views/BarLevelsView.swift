@@ -36,10 +36,12 @@ public struct BarLevelsView: View {
 	}
 	
 	public var body: some View {
-		HStack(spacing: 0) {
-			if let levels = levels ?? preloadedLevels {
-				ForEach(levels.indices, id: \.self) { idx in
-					Bar(volume: levels[idx], verticallyCentered: verticallyCentered, segmentWidth: segmentWidth, spacerWidth: spacerWidth, barColor: barColor)
+		GeometryReader { geo in
+			HStack(spacing: 0) {
+				if let levels = levels ?? preloadedLevels {
+					ForEach(levels.indices, id: \.self) { idx in
+						Bar(volume: levels[idx], height: geo.height, verticallyCentered: verticallyCentered, segmentWidth: segmentWidth, spacerWidth: spacerWidth, barColor: barColor)
+					}
 				}
 			}
 		}
@@ -57,6 +59,7 @@ public struct BarLevelsView: View {
 	
 	struct Bar: View {
 		let volume: Volume
+		let height: Double
 		let verticallyCentered: Bool
 		let segmentWidth: CGFloat?
 		let spacerWidth: CGFloat
@@ -68,24 +71,25 @@ public struct BarLevelsView: View {
 			}
 			.frame(maxWidth: 4)
 			.overlay(
-				GeometryReader { geo in
-					VStack(spacing: 0) {
-						Spacer(minLength: 0)
+				VStack(spacing: 0) {
+					Spacer(minLength: 0)
+					
+					let heightFraction = min(pow(volume.unit, 8), 1)
+					let totalFraction = heightFraction * (2 - heightFraction)
+					
+					HStack(spacing: 0) {
+						RoundedRectangle(cornerRadius: (segmentWidth ?? 0) / 2)
+							.fill(barColor)
+							.frame(width: segmentWidth, height: height * totalFraction)
 						
-						HStack(spacing: 0) {
-							RoundedRectangle(cornerRadius: (segmentWidth ?? 0) / 2)
-								.fill(barColor)
-								.frame(width: segmentWidth, height: geo.height * min(pow(volume.unit, 8), 1))
-							
-							if spacerWidth > 0 {
-								Rectangle()
-									.fill(.clear)
-									.frame(width: spacerWidth, height: 1)
-							}
+						if spacerWidth > 0 {
+							Rectangle()
+								.fill(.clear)
+								.frame(width: spacerWidth, height: 1)
 						}
-						
-						if verticallyCentered { Spacer(minLength: 0) }
 					}
+					
+					if verticallyCentered { Spacer(minLength: 0) }
 				}
 			)
 		}
