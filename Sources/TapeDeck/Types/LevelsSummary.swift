@@ -64,7 +64,7 @@ public class LevelsSummary: Codable, CustomStringConvertible {
 		if currentBatch.isEmpty { return }
 		let db = 20 * log10(Float(currentBatch.squaredAverage))
 
-		history.append(DataPoint(db))
+		if !db.isNaN, !db.isInfinite { history.append(DataPoint(db)) }
 		currentBatch = []
 	}
 	
