@@ -34,6 +34,11 @@ import Speech
 	override init() {
 		super.init()
 		speechRecognizer.delegate = self
+		addAsObserver(of: UIApplication.didBecomeActiveNotification, selector: #selector(didBecomeActive))
+	}
+	
+	@objc func didBecomeActive() {
+		objectWillChange.send()
 	}
 	
 	public func requestPermission() async -> Bool {
@@ -56,6 +61,9 @@ import Speech
 		}
 	}
 	
+	public var isAvailable: Bool {
+		!AVAudioSession.sharedInstance().isOtherAudioPlaying
+	}
 	
 	func buildRecognitionTask() -> SFSpeechRecognitionTask? {
 		guard let recognitionRequest else { return nil }
