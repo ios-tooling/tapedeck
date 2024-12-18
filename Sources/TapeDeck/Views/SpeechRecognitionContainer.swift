@@ -15,6 +15,7 @@ public struct SpeechRecognitionContainer<Content: View>: View {
 	@Binding var isRunning: Bool
 	var pauseCallback: ((SpeechPausePhase) -> Void)?
 	let includePendingText: Bool
+	@State var lastText = ""
 
 	public init(text: Binding<String> = .constant(""), pauseCallback: ((SpeechPausePhase) -> Void)? = nil, running: Binding<Bool>, includePendingText: Bool = true, content: @escaping (SpeechTranscription) -> Content) {
 		_text = text
@@ -33,7 +34,11 @@ public struct SpeechRecognitionContainer<Content: View>: View {
 					try await transcript.start { kind in
 						switch kind {
 						case .pause: pauseCallback?(.paused)
-						case .phrase: pauseCallback?(.speakingStopped(transcript.pauseDuration))
+						case .phrase(let text, _):
+							if !text.isEmpty, text != lastText {
+								pauseCallback?(.speakingStopped(transcript.pauseDuration))
+							}
+							lastText = text
 						}
 					}
 				} catch {
