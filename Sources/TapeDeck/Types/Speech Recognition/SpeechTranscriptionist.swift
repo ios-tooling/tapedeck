@@ -37,6 +37,10 @@ import Speech
 		addAsObserver(of: UIApplication.didBecomeActiveNotification, selector: #selector(didBecomeActive))
 	}
 	
+	public func clearTranscript() {
+		currentTranscription = SpeechTranscription()
+	}
+	
 	@objc func didBecomeActive() {
 		objectWillChange.send()
 	}
@@ -87,6 +91,7 @@ import Speech
 				}
 				self.lastString = best.formattedString
 				self.textCallback?(.phrase(self.lastString, confidence))
+				
 				if confidence == 0 {
 					if #available(iOS 16.0, *) {
 						self.pauseTask?.cancel()

@@ -7,15 +7,16 @@
 
 import SwiftUI
 
+public enum SpeechPausePhase { case speakingStopped(TimeInterval), paused }
 public struct SpeechRecognitionContainer<Content: View>: View {
 	let content: (SpeechTranscription) -> Content
 	@ObservedObject var transcript = SpeechTranscriptionist.instance
 	@Binding var text: String
 	@Binding var isRunning: Bool
-	var pauseCallback: (() -> Void)?
+	var pauseCallback: ((SpeechPausePhase) -> Void)?
 	let includePendingText: Bool
-	
-	public init(text: Binding<String> = .constant(""), pauseCallback: (() -> Void)? = nil, running: Binding<Bool>, includePendingText: Bool = true, content: @escaping (SpeechTranscription) -> Content) {
+
+	public init(text: Binding<String> = .constant(""), pauseCallback: ((SpeechPausePhase) -> Void)? = nil, running: Binding<Bool>, includePendingText: Bool = true, content: @escaping (SpeechTranscription) -> Content) {
 		_text = text
 		_isRunning = running
 		self.content = content
@@ -30,7 +31,10 @@ public struct SpeechRecognitionContainer<Content: View>: View {
 			} else if isRunning, !transcript.isRunning {
 				do {
 					try await transcript.start { kind in
-						if case .pause = kind { pauseCallback?() }
+						switch kind {
+						case .pause: pauseCallback?(.paused)
+						case .phrase: pauseCallback?(.speakingStopped(transcript.pauseDuration))
+						}
 					}
 				} catch {
 					print("failed to start transcription: \(error)")
