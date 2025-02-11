@@ -10,6 +10,14 @@ import AVFoundation
 import Accelerate
 
 extension CMSampleBuffer {
+	var sampleData: Data? {
+		let bytes = samples
+		guard !bytes.isEmpty else { return nil }
+
+		let data = bytes.withUnsafeBufferPointer { Data(buffer: $0) }
+		return data
+	}
+
 	public var samples: [Int16] {
 		guard let audioBuffer = CMSampleBufferGetDataBuffer(self) else {
 			 return []

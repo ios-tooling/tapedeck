@@ -1,15 +1,5 @@
 {
-  "originHash" : "27cdc288b07c62036a177c9cb15216f375d84f55fb1ab3f3619873c7ea5b8389",
   "pins" : [
-    {
-      "identity" : "filebrowser",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ios-tooling/filebrowser",
-      "state" : {
-        "revision" : "fe30626075b49a1304d9a505f3f6d281a192a804",
-        "version" : "0.0.4"
-      }
-    },
     {
       "identity" : "journalist",
       "kind" : "remoteSourceControl",
@@ -20,23 +10,14 @@
       }
     },
     {
-      "identity" : "suite",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ios-tooling/Suite.git",
-      "state" : {
-        "revision" : "9cc677a3a6c63a4c4b45e96bd90feaf1b219421f",
-        "version" : "1.1.8"
-      }
-    },
-    {
       "identity" : "swift-syntax",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-syntax",
       "state" : {
-        "revision" : "64889f0c732f210a935a0ad7cda38f77f876262d",
-        "version" : "509.1.1"
+        "revision" : "0687f71944021d616d34d922343dcef086855920",
+        "version" : "600.0.1"
       }
     }
   ],
-  "version" : 3
+  "version" : 2
 }

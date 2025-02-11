@@ -20,6 +20,7 @@ extension Recorder {
 	
 		var formatID: AudioFormatID?
 		var outputID: AudioFormatID?
+		var isRaw: Bool { fileExtension == "raw" }
 
 		var sampleRate: Int
 		public let mimeType: String
@@ -101,6 +102,23 @@ extension Recorder {
 			]
 
 			return AudioFileType(fileExtension: "wav", fileType: .wav, settings: settings, sampleRate: 16_000, mimeType: "audio/wav")
+		}()
+
+		public static let raw: AudioFileType = {
+			var channelLayout = AudioChannelLayout()
+			channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
+			
+			let settings: [String: Any] = [
+				AVFormatIDKey: Int(kAudioFormatLinearPCM),
+				AVSampleRateKey: 48_000,
+				AVNumberOfChannelsKey: 1,
+				AVLinearPCMIsBigEndianKey: false,
+				AVLinearPCMIsFloatKey: false,
+				AVLinearPCMBitDepthKey: 16,
+				AVLinearPCMIsNonInterleaved: false,
+			]
+
+			return AudioFileType(fileExtension: "raw", fileType: .wav, settings: settings, sampleRate: 16_000, mimeType: "audio/wav")
 		}()
 
 		public static let mp3: AudioFileType = {

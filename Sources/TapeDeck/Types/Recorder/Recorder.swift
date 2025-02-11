@@ -36,6 +36,7 @@ import Accelerate
 	var interruptCount = 0
 	var handlers: [SamplesHandler] = []
 	
+	var shouldTranscribe = false
 	var currentAverage: Float = 0.0
 	var currentCount = 0
 	var max: Double = 0
@@ -70,7 +71,7 @@ import Accelerate
 		return false
 	}
 	
-	public func startRecording(to output: RecorderOutput = OutputDevNull.instance) async throws {
+	public func startRecording(to output: RecorderOutput = OutputDevNull.instance, shouldTranscribe: Bool = false) async throws {
 		if Gestalt.isOnSimulator { logg("CANNOT RECORD ON THE SIMULATOR"); throw RecorderError.cantRecordOnSimulator }
 
 		guard state != .running else {
@@ -105,7 +106,7 @@ import Accelerate
 		try await Microphone.instance.setActive(self)
 		state = .running
 		
-		if let url = await output.containerURL {
+		if shouldTranscribe, let url = await output.containerURL {
 			activeTranscript = Transcript(forOutputURL: url)
 			activeTranscript?.beginTranscribing()
 		}

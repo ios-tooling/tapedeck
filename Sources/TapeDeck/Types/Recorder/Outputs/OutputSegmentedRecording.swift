@@ -13,8 +13,8 @@ import Suite
 }
 
 public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatable {
-	var assetWriter: AVAssetWriter!
-	var assetWriterInput: AVAssetWriterInput!
+	var assetWriter: AVAssetWriter?
+	var assetWriterInput: AVAssetWriterInput?
 	var chunkDuration: TimeInterval = 5
 	var chunkSize: Int64 { Int64(chunkDuration) * sampleRate }
 	var sampleRate: Int64 = 44100
@@ -25,6 +25,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 	var internalType = Recorder.AudioFileType.wav16k
 	var currentURL: URL?
 	var segmentStartedAt: TimeInterval = 0
+	var rawSampleWriter: RawSampleWriter?
 	
 	var chunks: [SegmentedRecordingChunkInfo] = []
 	var totalChunks = 0
@@ -42,7 +43,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 	}
 
 	public func handle(buffer sampleBuffer: CMSampleBuffer) {
-		guard let input = assetWriterInput else {
+		guard assetWriterInput != nil || rawSampleWriter != nil else {
 			print("No current writer configured")
 			return
 		}
@@ -52,8 +53,10 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 			return
 		}
 		
-		if !input.append(sampleBuffer) {
-			print("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
+		if outputType.isRaw {
+			rawSampleWriter!.append(sampleBuffer)
+		} else if assetWriterInput?.append(sampleBuffer) != true {
+			print("Failed to append buffer, \(self.assetWriter?.error?.localizedDescription ?? "unknown error")")
 		}
 		chunkSamplesRead += Int64(sampleBuffer.numSamples)
 		samplesRead += Int64(sampleBuffer.numSamples)
@@ -78,9 +81,11 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 	}
 	
 	public func endRecording() async throws -> URL? {
-		await closeCurrentWriter(writer: assetWriter, input: assetWriterInput, url: currentURL)
+		await closeCurrentWriter(writer: assetWriter, input: assetWriterInput, url: currentURL, rawSampleWriter: rawSampleWriter)
+
 		assetWriterInput = nil
 		assetWriter = nil
+		rawSampleWriter = nil
 		return containerURL
 	}
 	
@@ -96,43 +101,59 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 		let writer = assetWriter
 		let writerInput = assetWriterInput
 		let url = currentURL
+		let rawWriter = rawSampleWriter
 		segmentStartedAt = offset
-		
-		Task { await closeCurrentWriter(writer: writer, input: writerInput, url: url) }
+
 		assetWriterInput = nil
 		assetWriter = nil
+		rawSampleWriter = nil
+		
+		Task { await closeCurrentWriter(writer: writer, input: writerInput, url: url, rawSampleWriter: rawWriter) }
+				
+		var nextURL = chunkURL(startingAt: offset, duration: chunkDuration)
+		
+		if outputType.isRaw {
+			nextURL = nextURL.deletingPathExtension().appendingPathExtension("raw")
+			rawSampleWriter = RawSampleWriter(url: nextURL)
+		} else {
+			assetWriterInput = AVAssetWriterInput(mediaType: .audio, outputSettings: internalType.settings)
+			assetWriterInput?.expectsMediaDataInRealTime = true
 
-		assetWriterInput = AVAssetWriterInput(mediaType: .audio, outputSettings: internalType.settings)
-		assetWriterInput.expectsMediaDataInRealTime = true
-		
-		let nextURL = chunkURL(startingAt: offset, duration: chunkDuration)
-		
+			try? FileManager.default.removeItem(at: nextURL)
+			assetWriter = try AVAssetWriter(outputURL: nextURL, fileType: internalType.fileType)
+			assetWriterInput?.expectsMediaDataInRealTime = true
+			assetWriter?.add(assetWriterInput!)
+			assetWriter?.startWriting()
+			assetWriter?.startSession(atSourceTime: CMTime.zero)
+		}
 		chunkSamplesRead = 0
-		try? FileManager.default.removeItem(at: nextURL)
-		assetWriter = try AVAssetWriter(outputURL: nextURL, fileType: internalType.fileType)
-		assetWriterInput.expectsMediaDataInRealTime = true
-		assetWriter.add(assetWriterInput)
-		assetWriter.startWriting()
-		assetWriter.startSession(atSourceTime: CMTime.zero)
 		self.currentURL = nextURL
 	}
 	
-	func closeCurrentWriter(writer: AVAssetWriter?, input: AVAssetWriterInput?, url: URL?) async {
-		guard let input, let writer else { return }
-		input.markAsFinished()
-
-		if let current = url {
-			await Recorder.instance.activeTranscript?.addSegment(start: segmentStartedAt, filename: current.deletingPathExtension().lastPathComponent, samples: 0)
-			objectWillChange.sendOnMain()
-			if writer.status != .completed {
-				await writer.finishWriting()
-			}
-			do {
-				try await didFinishWriting(to: current)
-			} catch {
-				print("Problem finishing the conversion: \(error)")
-			}
+	func closeCurrentWriter(writer: AVAssetWriter?, input: AVAssetWriterInput?, url: URL?, rawSampleWriter: RawSampleWriter?) async {
+		if let rawSampleWriter {
+			rawSampleWriter.close()
 		}
+		
+		if let input, let writer {
+			input.markAsFinished()
+			
+			if let current = url {
+				await Recorder.instance.activeTranscript?.addSegment(start: segmentStartedAt, filename: current.deletingPathExtension().lastPathComponent, samples: 0)
+				if writer.status != .completed {
+					await writer.finishWriting()
+				}
+				do {
+					try await didFinishWriting(to: current)
+				} catch {
+					print("Problem finishing the conversion: \(error)")
+				}
+			}
+		} else if let rawSampleWriter {
+			rawSampleWriter.close()
+		}
+
+		objectWillChange.sendOnMain()
 	}
 	
 	enum OutputSegmentedRecordingError: Error { case noRecording, outOfRange }

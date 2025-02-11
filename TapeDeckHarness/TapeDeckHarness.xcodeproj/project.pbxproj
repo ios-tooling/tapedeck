@@ -12,6 +12,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B51403E82D5B97980063FA91 /* Suite */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Suite; path = "/Volumes/Macintosh HD/Users/ben/Documents/Managed Projects/Frameworks/Suite"; sourceTree = "<absolute>"; };
+		B51405802D5BCED00063FA91 /* FileBrowser */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FileBrowser; path = "/Volumes/Macintosh HD/Users/ben/Documents/Managed Projects/Frameworks/FileBrowser"; sourceTree = "<absolute>"; };
 		B5FE38FA2CACAF9700EB82D5 /* TapeDeckHarness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TapeDeckHarness.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -52,6 +54,8 @@
 		B5FE38F12CACAF9700EB82D5 = {
 			isa = PBXGroup;
 			children = (
+				B51405802D5BCED00063FA91 /* FileBrowser */,
+				B51403E82D5B97980063FA91 /* Suite */,
 				B5FE38FC2CACAF9700EB82D5 /* TapeDeckHarness */,
 				B5FE38FB2CACAF9700EB82D5 /* Products */,
 			);
@@ -299,6 +303,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.standalone.TapeDeckHarness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -331,6 +336,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.standalone.TapeDeckHarness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
