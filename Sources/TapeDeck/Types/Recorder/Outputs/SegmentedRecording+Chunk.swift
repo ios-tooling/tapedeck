@@ -21,7 +21,7 @@ extension OutputSegmentedRecording {
 		if !chunks.isEmpty { clearChunks(andFiles: false) }
 		
 		if let existing = try? FileManager.default.contentsOfDirectory(at: chunkURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]) {
-			chunks = existing.compactMap({ SegmentedRecordingChunkInfo(url: $0)}).sorted()
+			chunks = existing.compactMap({ SegmentedRecordingChunkInfo(url: $0, recording: self)}).sorted()
 			if let first = existing.compactMap({ $0.lastPathComponent.components(separatedBy: ".").first }).first, let count = Int(first) { totalChunks = count }
 		}
 
@@ -63,7 +63,7 @@ extension OutputSegmentedRecording {
 		let offsetString = offset.durationString(showLeadingZero: true).replacingOccurrences(of: ":", with: ";")
 		let name = "\(String(format: "%06d", totalChunks)). \(offsetString)-\(duration).\(ext)"
 		let newURL = parent.appendingPathComponent(name)
-		if let chunk = SegmentedRecordingChunkInfo(url: newURL) { chunks.append(chunk) }
+		if let chunk = SegmentedRecordingChunkInfo(url: newURL, recording: self) { chunks.append(chunk) }
 		
 		if let durationLimit {
 			while storedDuration > (durationLimit + chunkDuration) {

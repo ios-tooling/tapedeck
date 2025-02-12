@@ -15,6 +15,7 @@ public struct SegmentedRecordingChunkInfo: Comparable, Sendable, Identifiable {	
 	public let index: Int
 	public var end: TimeInterval { start + duration }
 	public var id: URL { url }
+	public var recording: OutputSegmentedRecording
 	
 	public static func <(lhs: Self, rhs: Self) -> Bool { lhs.index < rhs.index }
 	public static func ==(lhs: Self, rhs: Self) -> Bool { lhs.url == rhs.url }
@@ -24,16 +25,25 @@ public struct SegmentedRecordingChunkInfo: Comparable, Sendable, Identifiable {	
 	}
 	
 	public func play() {
-		RecordingPlayer.instance.player.replaceCurrentItem(with: AVPlayerItem(url: url))
-		RecordingPlayer.instance.player.play()
+		if recording.outputType == .raw {
+			if let data = try? Data(contentsOf: url) {
+				Task {
+					await recording.setupStreamer().streamAudioData(data)
+				}
+			}
+		} else {
+			RecordingPlayer.instance.player.replaceCurrentItem(with: AVPlayerItem(url: url))
+			RecordingPlayer.instance.player.play()
+		}
 	}
 	
 	public func extractVolumes(count: Int) async throws -> [Volume]? {
 		try await url.extractVolumes(count: count)
 	}
 	
-	init?(url: URL) {
+	init?(url: URL, recording parent: OutputSegmentedRecording) {
 		self.url = url
+		self.recording = parent
 		
 		let filename = url.lastPathComponent.replacingOccurrences(of: ";", with: ":")
 		let components = filename.components(separatedBy: ".")

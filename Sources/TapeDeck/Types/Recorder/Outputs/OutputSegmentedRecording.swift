@@ -26,6 +26,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 	var currentURL: URL?
 	var segmentStartedAt: TimeInterval = 0
 	var rawSampleWriter: RawSampleWriter?
+	var streamer: AudioStreamer?
 	
 	var chunks: [SegmentedRecordingChunkInfo] = []
 	var totalChunks = 0
@@ -43,10 +44,17 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 		loadChunks()
 	}
 	
+	func setupStreamer() -> AudioStreamer {
+		if let streamer { return streamer }
+		
+		streamer = AudioStreamer()
+		return streamer!
+	}
+	
 	func loadChunks() {
 		guard let containerURL, let contents = try? FileManager.default.contentsOfDirectory(at: containerURL, includingPropertiesForKeys: nil) else { return }
 		
-		chunks = contents.compactMap { SegmentedRecordingChunkInfo(url: $0) }
+		chunks = contents.compactMap { SegmentedRecordingChunkInfo(url: $0, recording: self) }
 		print("Loaded \(chunks.count) chunks")
 	}
 
