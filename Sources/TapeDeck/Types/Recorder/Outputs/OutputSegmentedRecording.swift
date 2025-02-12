@@ -21,7 +21,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 	var chunkSamplesRead: Int64 = 0
 	var samplesRead: Int64 = 0
 	var recordingDuration: TimeInterval = 0
-	var outputType = Recorder.AudioFileType.m4a
+	public nonisolated let outputType: Recorder.AudioFileType
 	var internalType = Recorder.AudioFileType.wav16k
 	var currentURL: URL?
 	var segmentStartedAt: TimeInterval = 0
@@ -35,14 +35,22 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 	
 	public static func ==(lhs: OutputSegmentedRecording, rhs: OutputSegmentedRecording) -> Bool { lhs === rhs }
 	
-	public init(in url: URL, outputType: Recorder.AudioFileType = .m4a, bufferDuration: TimeInterval = 30, ringDuration: TimeInterval? = nil) {
+	public init(in url: URL, outputType: Recorder.AudioFileType? = nil, bufferDuration: TimeInterval = 30, ringDuration: TimeInterval? = nil) {
 		self.containerURL = url
 		self.durationLimit = ringDuration
-		self.outputType = outputType
+		self.outputType = outputType ?? url.detectedAudioFileType ?? .m4a
 		self.chunkDuration = bufferDuration
+		loadChunks()
+	}
+	
+	func loadChunks() {
+		guard let containerURL, let contents = try? FileManager.default.contentsOfDirectory(at: containerURL, includingPropertiesForKeys: nil) else { return }
+		
+		chunks = contents.compactMap { SegmentedRecordingChunkInfo(url: $0) }
+		print("Loaded \(chunks.count) chunks")
 	}
 
-	public func handle(buffer sampleBuffer: CMSampleBuffer) {
+	public func handle(buffer sampleBuffer: CMSampleBuffer) async {
 		guard assetWriterInput != nil || rawSampleWriter != nil else {
 			print("No current writer configured")
 			return
@@ -54,7 +62,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 		}
 		
 		if outputType.isRaw {
-			rawSampleWriter!.append(sampleBuffer)
+			await rawSampleWriter!.append(sampleBuffer)
 		} else if assetWriterInput?.append(sampleBuffer) != true {
 			print("Failed to append buffer, \(self.assetWriter?.error?.localizedDescription ?? "unknown error")")
 		}
@@ -63,12 +71,12 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 		recordingDuration = TimeInterval(samplesRead / Int64(sampleRate * 1))
 		
 		if chunkSamplesRead >= chunkSize {
-			try? self.createWriter(startingAt: self.recordingDuration)
+			try? await self.createWriter(startingAt: self.recordingDuration)
 		}
 	}
 	
 	public func delete() {
-		clearChunks()
+		clearChunks(andFiles: true)
 	}
 	
 	public func prepareToRecord() async throws {
@@ -77,7 +85,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 		samplesRead = 0
 		recordingDuration = 0
 
-		try self.createWriter(startingAt: 0)
+		try await self.createWriter(startingAt: 0)
 	}
 	
 	public func endRecording() async throws -> URL? {
@@ -97,7 +105,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 		get { chunks }
 	}
 	
-	func createWriter(startingAt offset: TimeInterval) throws {
+	func createWriter(startingAt offset: TimeInterval) async throws {
 		let writer = assetWriter
 		let writerInput = assetWriterInput
 		let url = currentURL
@@ -108,13 +116,14 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 		assetWriter = nil
 		rawSampleWriter = nil
 		
-		Task { await closeCurrentWriter(writer: writer, input: writerInput, url: url, rawSampleWriter: rawWriter) }
+		await closeCurrentWriter(writer: writer, input: writerInput, url: url, rawSampleWriter: rawWriter)
 				
 		var nextURL = chunkURL(startingAt: offset, duration: chunkDuration)
-		
+		chunkSamplesRead = 0
+
 		if outputType.isRaw {
 			nextURL = nextURL.deletingPathExtension().appendingPathExtension("raw")
-			rawSampleWriter = RawSampleWriter(url: nextURL)
+			await rawSampleWriter = RawSampleWriter(url: nextURL)
 		} else {
 			assetWriterInput = AVAssetWriterInput(mediaType: .audio, outputSettings: internalType.settings)
 			assetWriterInput?.expectsMediaDataInRealTime = true
@@ -126,13 +135,12 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 			assetWriter?.startWriting()
 			assetWriter?.startSession(atSourceTime: CMTime.zero)
 		}
-		chunkSamplesRead = 0
 		self.currentURL = nextURL
 	}
 	
 	func closeCurrentWriter(writer: AVAssetWriter?, input: AVAssetWriterInput?, url: URL?, rawSampleWriter: RawSampleWriter?) async {
 		if let rawSampleWriter {
-			rawSampleWriter.close()
+			await rawSampleWriter.close()
 		}
 		
 		if let input, let writer {
@@ -150,7 +158,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 				}
 			}
 		} else if let rawSampleWriter {
-			rawSampleWriter.close()
+			await rawSampleWriter.close()
 		}
 
 		objectWillChange.sendOnMain()

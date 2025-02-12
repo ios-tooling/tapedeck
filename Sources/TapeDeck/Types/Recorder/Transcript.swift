@@ -42,9 +42,25 @@ public class Transcript: Codable, Identifiable, CustomStringConvertible {
 		}
 	}
 	
+	var containerURL: URL? {
+		get throws {
+			let filename = saveURL.deletingPathExtension().lastPathComponent
+			let parent = saveURL.deletingLastPathComponent()
+			let siblings = try FileManager.default.contentsOfDirectory(at: parent, includingPropertiesForKeys: nil)
+			
+			for sibling in siblings {
+				if sibling != saveURL, sibling.deletingPathExtension().lastPathComponent == filename {
+					return sibling
+				}
+			}
+			return nil
+		}
+	}
+	
 	struct NoRecordingSegmentsFoundError: Error { }
 	public func buildRecording() async throws -> OutputSegmentedRecording {
-		let recording = OutputSegmentedRecording(in: saveURL.deletingPathExtension())
+		guard let url = try containerURL else { throw NoRecordingSegmentsFoundError() }
+		let recording = OutputSegmentedRecording(in: url)
 		await recording.prepare()
 		return recording
 	}

@@ -24,8 +24,8 @@ struct LongTermRecordingView: View {
  
 		url = root.appendingPathComponent(Date.now.filename).appendingPathExtension(format.fileExtension)
 		
-		recording = OutputSegmentedRecording(in: url!, outputType: format, bufferDuration: format == .raw ? 0.2 : 5)
-		try await recorder.startRecording(to: recording!)
+		recording = OutputSegmentedRecording(in: url!, outputType: format, bufferDuration: format == .raw ? 1 : 5)
+		try await recorder.startRecording(to: recording!, shouldTranscribe: true)
 	}
 	
 	func stop() async throws {

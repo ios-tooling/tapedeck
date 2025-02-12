@@ -9,7 +9,7 @@ import Foundation
 import AVFoundation
 
 
-class RawSampleWriter {
+@MainActor class RawSampleWriter {
 	let url: URL
 	var data = Data()
 	var hasWritten = true

@@ -11,14 +11,14 @@ import Suite
 extension OutputSegmentedRecording {
 	var chunkURL: URL { containerURL! }
 	
-	func clearChunks() {
-		try? FileManager.default.removeItem(at: chunkURL)
+	func clearChunks(andFiles: Bool) {
+		if andFiles { try? FileManager.default.removeItem(at: chunkURL) }
 		chunks = []
 		totalChunks = 0
 	}
 	
 	func prepare() {
-		if !chunks.isEmpty { clearChunks() }
+		if !chunks.isEmpty { clearChunks(andFiles: false) }
 		
 		if let existing = try? FileManager.default.contentsOfDirectory(at: chunkURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]) {
 			chunks = existing.compactMap({ SegmentedRecordingChunkInfo(url: $0)}).sorted()

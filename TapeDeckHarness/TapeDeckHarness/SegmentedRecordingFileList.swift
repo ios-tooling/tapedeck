@@ -19,7 +19,7 @@ public struct SegmentedRecordingFileList: View {
 	public var body: some View {
 		List {
 			ForEach(chunks) { chunk in
-				Row(chunk: chunk)
+				Row(chunk: chunk, recording: recording)
 			}
 		}
 		.task {
@@ -35,6 +35,7 @@ public struct SegmentedRecordingFileList: View {
 	
 	struct Row: View {
 		let chunk: SegmentedRecordingChunkInfo
+		let recording: OutputSegmentedRecording
 		
 		var body: some View {
 			Button(action: {
@@ -42,7 +43,9 @@ public struct SegmentedRecordingFileList: View {
 			}) {
 				VStack {
 					Text(chunk.timeDescription)
-					BarLevelsView(url: chunk.url)
+					if recording.outputType != .raw {
+						BarLevelsView(url: chunk.url)
+					}
 				}
 			}
 		}
