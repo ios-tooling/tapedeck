@@ -49,6 +49,7 @@ class AudioStreamer {
 		  }
 		  
 		  audioPlayer.scheduleBuffer(buffer) {
+			  print("Done streaming")
 				// Schedule next buffer if needed
 		  }
 	 }

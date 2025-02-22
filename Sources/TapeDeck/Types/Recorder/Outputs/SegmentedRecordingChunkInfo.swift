@@ -28,7 +28,7 @@ public struct SegmentedRecordingChunkInfo: Comparable, Sendable, Identifiable {	
 		if recording.outputType == .raw {
 			if let data = try? Data(contentsOf: url) {
 				Task {
-					await recording.setupStreamer().streamAudioData(data)
+					try? await recording.setupStreamer().streamAudioData(data)
 				}
 			}
 		} else {

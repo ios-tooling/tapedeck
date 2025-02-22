@@ -26,7 +26,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 	var currentURL: URL?
 	var segmentStartedAt: TimeInterval = 0
 	var rawSampleWriter: RawSampleWriter?
-	var streamer: AudioStreamer?
+	var streamer: AudioStreamManager?
 	
 	var chunks: [SegmentedRecordingChunkInfo] = []
 	var totalChunks = 0
@@ -44,10 +44,10 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 		loadChunks()
 	}
 	
-	func setupStreamer() -> AudioStreamer {
+	func setupStreamer() -> AudioStreamManager {
 		if let streamer { return streamer }
 		
-		streamer = AudioStreamer()
+		streamer = AudioStreamManager()
 		return streamer!
 	}
 	
