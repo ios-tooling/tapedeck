@@ -30,7 +30,7 @@ extension Recorder {
 		}
 		
 		public static func ==(lhs: AudioFileType, rhs: AudioFileType) -> Bool {
-			lhs.fileType == rhs.fileType
+			lhs.fileType == rhs.fileType && lhs.fileExtension == rhs.fileExtension
 		}
 
 		public static let m4a: AudioFileType = {

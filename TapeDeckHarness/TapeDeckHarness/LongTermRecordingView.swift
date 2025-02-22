@@ -29,8 +29,15 @@ struct LongTermRecordingView: View {
 	}
 	
 	func stop() async throws {
-		try await recorder.stop()
-		recording = nil
+		if recorder.isRecording {
+			try await recorder.stop()
+			let url = url
+			recording = nil
+			try? await Task.sleep(for: .seconds(0.2))
+			self.recording = try? await Transcript.load(in: url!).buildRecording()
+		} else {
+			recording = nil
+		}
 	}
 	
 	var body: some View {
@@ -63,6 +70,10 @@ struct LongTermRecordingView: View {
 				}
 				
 				SegmentedRecordingFileList(recording: recording)
+				AsyncButton("Delete") {
+					await recording.delete()
+					self.recording = nil
+				}
 				
 			} else {
 				AsyncButton(action: { try await start(format: .m4a) }) {
