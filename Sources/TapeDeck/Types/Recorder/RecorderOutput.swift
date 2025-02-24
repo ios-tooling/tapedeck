@@ -16,7 +16,7 @@ public protocol SamplesHandler: Actor {
 }
 
 public protocol RecorderOutput: SamplesHandler {	
-	var containerURL: URL? { get async }
+	var containerURL: URL? { get }
 }
 
 

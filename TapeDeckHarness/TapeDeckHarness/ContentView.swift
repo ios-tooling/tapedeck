@@ -15,6 +15,7 @@ struct ContentView: View {
 	@State var isListening = false
 	@ObservedObject var mic = Microphone.instance
 	@ObservedObject var recorder = Recorder.instance
+	
 	var body: some View {
 		VStack {
 			AmbientWaveformView(lineWidth: 1)

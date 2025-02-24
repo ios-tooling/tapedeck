@@ -60,8 +60,7 @@ extension OutputSegmentedRecording {
 		
 		totalChunks += 1
 		
-		let offsetString = offset.durationString(showLeadingZero: true).replacingOccurrences(of: ":", with: ";")
-		let name = "\(String(format: "%06d", totalChunks)). \(offsetString)-\(duration).\(ext)"
+		let name = String.fileName(forChunk: totalChunks, offset: offset, duration: duration, ext: ext)
 		let newURL = parent.appendingPathComponent(name)
 		if let chunk = SegmentedRecordingChunkInfo(url: newURL, recording: self) { chunks.append(chunk) }
 		
@@ -72,5 +71,12 @@ extension OutputSegmentedRecording {
 			}
 		}
 		return newURL
+	}
+}
+
+extension String {
+	static func fileName(forChunk chunk: Int, offset: TimeInterval, duration: TimeInterval, ext: String) -> String {
+		let offsetString = offset.durationString(showLeadingZero: true).replacingOccurrences(of: ":", with: ";")
+		return "\(String(format: "%06d", chunk)). \(offsetString)-\(duration).\(ext)"
 	}
 }

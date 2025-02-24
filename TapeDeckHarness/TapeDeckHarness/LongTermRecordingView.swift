@@ -13,10 +13,25 @@ struct LongTermRecordingView: View {
 	let root = URL.documents
 	@State var format = Recorder.AudioFileType.m4a
 	@State var url: URL?
-	@State var recording: OutputSegmentedRecording?
+	@State var recording: RecorderOutput?
 	@ObservedObject var recorder = Recorder.instance
 	@State var fileBrowserURL: URL?
 	@State var listingRecordings = false
+	@State var player = RawPlayback.instance
+
+	var rawSampleData: Data? {
+		guard let url = Bundle.main.url(forResource: "sample_buffer_data", withExtension: "") else { return nil }
+		guard let data = try? Data(contentsOf: url) else { return nil }
+		return data
+	}
+	var sampleData: [Int16]? {
+		guard let data = rawSampleData else { return nil }
+		let i16array = data.withUnsafeBytes {
+				  Array($0.bindMemory(to: Int16.self)).map(Int16.init(bigEndian:))
+			 }
+		print("Found \(i16array.count) samples")
+		return i16array
+	}
 	
 	func start(format: Recorder.AudioFileType) async throws {
 		_ = try? await Microphone.instance.stop()
@@ -24,7 +39,11 @@ struct LongTermRecordingView: View {
  
 		url = root.appendingPathComponent(Date.now.filename).appendingPathExtension(format.fileExtension)
 		
-		recording = OutputSegmentedRecording(in: url!, outputType: format, bufferDuration: format == .raw ? 1 : 5)
+		if format == .raw {
+			recording = RawDataRecorder(url: url!)
+		} else {
+			recording = OutputSegmentedRecording(in: url!, outputType: format, bufferDuration: format == .raw ? 1 : 5)
+		}
 		try await recorder.startRecording(to: recording!, shouldTranscribe: true)
 	}
 	
@@ -42,10 +61,29 @@ struct LongTermRecordingView: View {
 	
 	var body: some View {
 		VStack {
+			if let rawData = rawSampleData {
+				Button("Play") {
+					player.playAudio(from: rawData)
+//					player.play(samples: rawData)
+				}
+			}
 			HStack {
 				Button("Files") { fileBrowserURL = root }
 					.fullScreenCover(item: $fileBrowserURL) { url in
-						FileBrowserView(root: url)
+						FileBrowserView(root: url) { fileURL, placement in
+							if fileURL.pathExtension == "data" {
+								if placement == .details {
+									Button("Play Raw") {
+										RawPlayback.instance.playAudio(from: fileURL)
+									}
+									.buttonStyle(.bordered)
+								} else {
+									Button(action: { RawPlayback.instance.playAudio(from: fileURL) }) {
+										Image(systemName: "play.fill")
+									}
+								}
+							}
+						}
 					}
 				
 				Button("Recordings") { listingRecordings.toggle() }
@@ -69,10 +107,13 @@ struct LongTermRecordingView: View {
 						.foregroundStyle(.red)
 				}
 				
-				SegmentedRecordingFileList(recording: recording)
-				AsyncButton("Delete") {
-					await recording.delete()
-					self.recording = nil
+				if let recording = recording as? OutputSegmentedRecording {
+					SegmentedRecordingFileList(recording: recording)
+					
+					AsyncButton("Delete") {
+						await recording.delete()
+						self.recording = nil
+					}
 				}
 				
 			} else {

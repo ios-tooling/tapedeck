@@ -10,7 +10,7 @@ import TapeDeck
 
 struct RecordingList: View {
 	let url: URL
-	@Binding var selectedRecording: OutputSegmentedRecording?
+	@Binding var selectedRecording: RecorderOutput?
 
 	@State var recordingURLs: [URL] = []
 	@State var transcripts: [Transcript] = []
@@ -47,7 +47,7 @@ struct RecordingList: View {
 	struct RecordingRow: View {
 		@Environment(\.dismiss) var dismiss
 		let transcript: Transcript
-		@Binding var selectedRecording: OutputSegmentedRecording?
+		@Binding var selectedRecording: RecorderOutput?
 
 		var body: some View {
 			AsyncButton(action: {
