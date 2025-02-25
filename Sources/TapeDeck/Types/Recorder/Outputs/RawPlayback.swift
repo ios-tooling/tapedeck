@@ -16,6 +16,8 @@ import AVFoundation
 	private var audioFormat: AVAudioFormat
 	var isPlaying = false
 	
+	var interruptionToken: Any?
+	
 	private init(sampleRate: Double = 44100) {
 		self.audioEngine = AVAudioEngine()
 		self.playerNode = AVAudioPlayerNode()
@@ -29,7 +31,19 @@ import AVFoundation
 		audioEngine.attach(playerNode)
 		audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: audioFormat)
 
+		interruptionToken = NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
+			guard let engine = note.object as? AVAudioEngine else { return }
+			Task { self?.handleInterruption(from: engine)}
+		}
+		
 		start()
+	}
+	
+	func handleInterruption(from engine: AVAudioEngine) {
+		print("Audio INterrupt")
+		if engine == audioEngine {
+			stop()
+		}
 	}
 	
 	public func start() {
