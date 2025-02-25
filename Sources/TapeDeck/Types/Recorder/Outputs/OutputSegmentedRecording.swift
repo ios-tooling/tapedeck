@@ -41,7 +41,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 		self.durationLimit = ringDuration
 		self.outputType = outputType ?? url.detectedAudioFileType ?? .m4a
 		self.chunkDuration = bufferDuration
-		loadChunks()
+		Task { await loadChunks() }
 	}
 	
 	func setupStreamer() -> AudioStreamManager {

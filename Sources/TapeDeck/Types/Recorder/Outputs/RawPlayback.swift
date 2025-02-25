@@ -14,6 +14,7 @@ import AVFoundation
 	private var audioEngine: AVAudioEngine
 	private var playerNode: AVAudioPlayerNode
 	private var audioFormat: AVAudioFormat
+	var isPlaying = false
 	
 	private init(sampleRate: Double = 44100) {
 		self.audioEngine = AVAudioEngine()
@@ -27,12 +28,24 @@ import AVFoundation
 		
 		audioEngine.attach(playerNode)
 		audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: audioFormat)
-		
+
+		start()
+	}
+	
+	public func start() {
+		if isPlaying { return }
 		do {
 			try audioEngine.start()
+			isPlaying = true
 		} catch {
 			print("Error starting AVAudioEngine: \(error.localizedDescription)")
 		}
+	}
+	
+	public func stop() {
+		if !isPlaying { return }
+		isPlaying = false
+		audioEngine.stop()
 	}
 	
 	public func playAudio(from url: URL) {
@@ -42,6 +55,7 @@ import AVFoundation
 	}
 	
 	public func playAudio(from rawInt16Data: Data) {
+		start()
 		let int16Count = rawInt16Data.count / MemoryLayout<Int16>.size
 		let frameLength = UInt32(int16Count)
 		
