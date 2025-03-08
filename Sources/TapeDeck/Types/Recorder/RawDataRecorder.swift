@@ -9,7 +9,7 @@ import Foundation
 import AVFoundation
 
 public actor RawDataRecorder: RecorderOutput {
-	let directory: URL
+	nonisolated let directory: URL
 	var wavMirror: OutputSegmentedRecording?
 	var chunkCount = 0
 	var samplesPerFile = 44_100 * 5
@@ -22,13 +22,16 @@ public actor RawDataRecorder: RecorderOutput {
 		
 		
 		try? FileManager.default.createDirectory(at: wavURL, withIntermediateDirectories: true)
+		Task { await setupWavMirror() }
+	}
+
+	func setupWavMirror() {
 		wavMirror = OutputSegmentedRecording(in: wavURL, outputType: .wav16k)
-		
 	}
 	
-	public var containerURL: URL? { directory }
-	public var rawURL: URL { directory.appendingPathComponent("raw", conformingTo: .directory) }
-	public var wavURL: URL { directory.appendingPathComponent("wav", conformingTo: .directory) }
+	nonisolated public var containerURL: URL? { directory }
+	nonisolated public var rawURL: URL { directory.appendingPathComponent("raw", conformingTo: .directory) }
+	nonisolated public var wavURL: URL { directory.appendingPathComponent("wav", conformingTo: .directory) }
 
 	
 	public func handle(buffer: CMSampleBuffer) async {

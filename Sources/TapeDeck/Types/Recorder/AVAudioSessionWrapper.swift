@@ -35,7 +35,7 @@ public class AVAudioSessionWrapper {
 			activeCount += 1
 		}
 		
-		var options: AVAudioSession.CategoryOptions = [.allowBluetoothA2DP, .allowBluetooth]
+		var options: AVAudioSession.CategoryOptions = [.allowBluetoothA2DP, .allowBluetooth, .overrideMutedMicrophoneInterruption, .mixWithOthers]
 		
 		if defaultToSpeaker { options.insert(.defaultToSpeaker) }
 		try session.setCategory(.playAndRecord, options: options)

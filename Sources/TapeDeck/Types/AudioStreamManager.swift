@@ -46,7 +46,7 @@ class AudioStreamManager {
 		  // Copy data to buffer
 		  sampleData.withUnsafeBytes { rawBufferPointer in
 				let floatBufferPointer = rawBufferPointer.bindMemory(to: Float.self)
-				buffer.floatChannelData?[0].assign(from: floatBufferPointer.baseAddress!,
+				buffer.floatChannelData?[0].update(from: floatBufferPointer.baseAddress!,
 															count: sampleCount)
 		  }
 		  buffer.frameLength = AVAudioFrameCount(sampleCount)

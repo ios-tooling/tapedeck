@@ -56,7 +56,7 @@ public struct SegmentedRecordingChunkInfo: Comparable, Sendable, Identifiable {	
 			self.index = 0
 			self.start = 0
 			self.duration = 0
-			print("Failed to setup a segmented recording chunk")
+			print("Failed to setup a segmented recording chunk from URL: \(url.path)")
 			return nil
 		}
 		

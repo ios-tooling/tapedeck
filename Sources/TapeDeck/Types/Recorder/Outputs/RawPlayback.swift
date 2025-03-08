@@ -9,12 +9,13 @@ import Foundation
 import AVFoundation
 
 @MainActor public class RawPlayback {
-	public static let instance = RawPlayback()
+	public static var instance = RawPlayback()
 	
 	private var audioEngine: AVAudioEngine
 	private var playerNode: AVAudioPlayerNode
 	private var audioFormat: AVAudioFormat
 	var isPlaying = false
+	var completionTask: Task<Void, Never>?
 	
 	var interruptionToken: Any?
 	
@@ -33,10 +34,21 @@ import AVFoundation
 
 		interruptionToken = NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
 			guard let engine = note.object as? AVAudioEngine else { return }
-			Task { self?.handleInterruption(from: engine)}
+			Task { await self?.handleInterruption(from: engine)}
 		}
 		
 		start()
+	}
+	
+	func queueCompletion() {
+		completionTask?.cancel()
+		
+		completionTask = Task {
+			do {
+				try await Task.sleep(nanoseconds: 500_000_000)
+				Self.instance = RawPlayback()
+			} catch { }
+		}
 	}
 	
 	func handleInterruption(from engine: AVAudioEngine) {
@@ -47,7 +59,7 @@ import AVFoundation
 	}
 	
 	public func start() {
-		if isPlaying { return }
+//		if isPlaying { return }
 		do {
 			try audioEngine.start()
 			isPlaying = true
@@ -86,7 +98,9 @@ import AVFoundation
 			}
 		}
 		
-		playerNode.scheduleBuffer(buffer, completionHandler: nil)
+		playerNode.scheduleBuffer(buffer) {
+			self.queueCompletion()
+		}
 		playerNode.play()
 	}
 }

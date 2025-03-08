@@ -20,12 +20,22 @@ extension OutputSegmentedRecording {
 	func prepare() {
 		if !chunks.isEmpty { clearChunks(andFiles: false) }
 		
-		if let existing = try? FileManager.default.contentsOfDirectory(at: chunkURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]) {
+		if FileManager.default.directoryExists(at: chunkURL.appendingPathComponent("raw")) {
+			updateChunks(from: chunkURL.appendingPathComponent("raw"))
+		} else if FileManager.default.directoryExists(at: chunkURL.appendingPathComponent("wav")) {
+			updateChunks(from: chunkURL.appendingPathComponent("wav"))
+		} else {
+			updateChunks(from: chunkURL)
+		}
+	}
+	
+	func updateChunks(from url: URL) {
+		if let existing = try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]) {
 			chunks = existing.compactMap({ SegmentedRecordingChunkInfo(url: $0, recording: self)}).sorted()
 			if let first = existing.compactMap({ $0.lastPathComponent.components(separatedBy: ".").first }).first, let count = Int(first) { totalChunks = count }
 		}
 
-		try? FileManager.default.createDirectory(at: chunkURL, withIntermediateDirectories: true, attributes: nil)
+		try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
 	}
 	
 	var availableRange: Range<TimeInterval>? {

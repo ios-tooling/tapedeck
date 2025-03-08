@@ -96,6 +96,7 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 		try await self.createWriter(startingAt: 0)
 	}
 	
+	@discardableResult
 	public func endRecording() async throws -> URL? {
 		await closeCurrentWriter(writer: assetWriter, input: assetWriterInput, url: currentURL, rawSampleWriter: rawSampleWriter)
 
