@@ -9,6 +9,6 @@ import Foundation
 
 
 protocol MicrophoneListener: AnyObject {
-	func start() async throws -> Bool
+	func start() async throws
 	func stop() async throws
 }

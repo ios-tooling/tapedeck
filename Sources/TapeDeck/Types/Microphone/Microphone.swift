@@ -108,19 +108,19 @@ import OSLog
 		if activeListener == nil { isListening = false }
 	}
 
-	@discardableResult
-	public func start() async throws -> Bool { try await start(resettingHistory: false) }
+	public func start() async throws { try await start(resettingHistory: false) }
 
-	@discardableResult
-	public func start(resettingHistory: Bool) async throws -> Bool {
+	enum RecordingError: Error { case notAuthorized, failedToRecord }
+	
+	public func start(resettingHistory: Bool) async throws {
 		isPausedDueToInterruption = false
 		if isListening {
 			try await setActive(self)
 			if resettingHistory { history.reset() }
-			return true
+			return
 		}
 		
-		if await !AVAudioSessionWrapper.instance.requestRecordingPermissions() { return false }
+		if await !AVAudioSessionWrapper.instance.requestRecordingPermissions() { throw RecordingError.notAuthorized }
 
 		//self.history.reset()
 		
@@ -128,22 +128,18 @@ import OSLog
 			try AVAudioSessionWrapper.instance.start()
 		} catch {
 			logg("Error when starting the recorder: \((error as NSError).code.characterCode) \(error.localizedDescription)")
-			return false
+			throw error
 		}
 		
 		audioRecorder.prepareToRecord()
 		audioRecorder.delegate = self
 		audioRecorder.isMeteringEnabled = true
 		
-		if audioRecorder.record() {
-			isListening = true
-			setupTimer()
-			try await setActive(self)
-			objectWillChange.sendOnMain()
-			return true
-		}
-		
-		return false
+		guard audioRecorder.record() else { throw RecordingError.failedToRecord }
+		isListening = true
+		setupTimer()
+		try await setActive(self)
+		objectWillChange.sendOnMain()
 	}
 	
 	var startedAt: TimeInterval = 0

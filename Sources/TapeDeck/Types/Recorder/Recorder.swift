@@ -15,7 +15,7 @@ import Accelerate
 @MainActor public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampleBufferDelegate, MicrophoneListener {
 	public static let instance = Recorder()
 	
-	public enum RecorderError: String, Error { case notImplementedOnSimulator, unableToAddOutput, unableToAddInput, noValidInputs, cantRecordOnSimulator, unableToCreateRecognitionRequest, unableToCreateRecognitionTask, noPermissions }
+	public enum RecorderError: String, Error { case notImplementedOnSimulator, unableToAddOutput, unableToAddInput, noValidInputs, cantRecordOnSimulator, unableToCreateRecognitionRequest, unableToCreateRecognitionTask, noPermissions, unexpectedState }
 	
 	public enum State { case idle, running, paused, post }
 	
@@ -59,16 +59,15 @@ import Accelerate
 		return Double(totalSamplesReceived) / Double(samplingRate)
 	}
 	
-	func start() async throws -> Bool {
-		guard state == .idle else { return false }
+	func start() async throws {
+		guard state == .idle else { throw RecorderError.unexpectedState }
 		
 		do {
 			try await startRecording()
-			return true
 		} catch {
 			logg(error: error, "Problem starting to listen")
+			throw error
 		}
-		return false
 	}
 	
 	public func startRecording(to output: RecorderOutput = OutputDevNull.instance, shouldTranscribe: Bool = false) async throws {
