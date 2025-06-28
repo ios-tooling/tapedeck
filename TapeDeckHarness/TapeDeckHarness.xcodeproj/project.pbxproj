@@ -12,8 +12,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		B51403E82D5B97980063FA91 /* Suite */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Suite; path = "/Volumes/Macintosh HD/Users/ben/Documents/Managed Projects/Frameworks/Suite"; sourceTree = "<absolute>"; };
-		B5EB06142D7B799500DB0E02 /* FileBrowser */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FileBrowser; path = "/Users/ben/Documents/Managed Projects/Frameworks/FileBrowser"; sourceTree = "<absolute>"; };
 		B5FE38FA2CACAF9700EB82D5 /* TapeDeckHarness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TapeDeckHarness.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -21,7 +19,7 @@
 		B5FE394C2CACB1D500EB82D5 /* Exceptions for "TapeDeckHarness" folder in "TapeDeckHarness" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				Resources/Info.plist,
 			);
 			target = B5FE38F92CACAF9700EB82D5 /* TapeDeckHarness */;
 		};
@@ -54,8 +52,6 @@
 		B5FE38F12CACAF9700EB82D5 = {
 			isa = PBXGroup;
 			children = (
-				B5EB06142D7B799500DB0E02 /* FileBrowser */,
-				B51403E82D5B97980063FA91 /* Suite */,
 				B5FE38FC2CACAF9700EB82D5 /* TapeDeckHarness */,
 				B5FE38FB2CACAF9700EB82D5 /* Products */,
 			);
@@ -283,11 +279,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"TapeDeckHarness/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"TapeDeckHarness/Resources/Preview Content\"";
 				DEVELOPMENT_TEAM = YY6CWUX533;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = TapeDeckHarness/Info.plist;
+				INFOPLIST_FILE = TapeDeckHarness/Resources/Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Your microphone will be used to record your speech when you press the \"Start Recording\" button.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Speech recognition will be used to determine which words you speak into the device's microphone.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -295,6 +291,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -316,11 +313,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"TapeDeckHarness/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"TapeDeckHarness/Resources/Preview Content\"";
 				DEVELOPMENT_TEAM = YY6CWUX533;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = TapeDeckHarness/Info.plist;
+				INFOPLIST_FILE = TapeDeckHarness/Resources/Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Your microphone will be used to record your speech when you press the \"Start Recording\" button.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Speech recognition will be used to determine which words you speak into the device's microphone.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -328,6 +325,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

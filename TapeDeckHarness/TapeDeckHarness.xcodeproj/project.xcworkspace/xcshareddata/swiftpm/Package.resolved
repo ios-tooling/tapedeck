@@ -1,5 +1,15 @@
 {
+  "originHash" : "679f28521e0ce06500670d6c53bcf6b218ea7f22a32e106bc8c77a263c535d55",
   "pins" : [
+    {
+      "identity" : "filebrowser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/filebrowser",
+      "state" : {
+        "revision" : "ba99ce1bd133290cf5688661f0cb156db7905829",
+        "version" : "0.0.5"
+      }
+    },
     {
       "identity" : "journalist",
       "kind" : "remoteSourceControl",
@@ -7,6 +17,15 @@
       "state" : {
         "revision" : "c2b35ee743638869b65da551074ded4df99f9ce8",
         "version" : "1.0.12"
+      }
+    },
+    {
+      "identity" : "suite",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/Suite.git",
+      "state" : {
+        "revision" : "8e396ce9b37e46c820907647990c7fcfd6128389",
+        "version" : "1.2.25"
       }
     },
     {
@@ -19,5 +38,5 @@
       }
     }
   ],
-  "version" : 2
+  "version" : 3
 }
