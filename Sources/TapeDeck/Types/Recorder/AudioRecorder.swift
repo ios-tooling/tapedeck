@@ -11,7 +11,7 @@ import SwiftUI
 
 extension AVAudioPCMBuffer: @unchecked Sendable { }
 
-class AudioRecorder: Recordable {
+@Observable class AudioRecorder: Recordable {
 	private var outputContinuation: AsyncStream<AVAudioPCMBuffer>.Continuation? = nil
 	private let audioEngine: AVAudioEngine
 	var playerNode: AVAudioPlayerNode?
@@ -20,6 +20,12 @@ class AudioRecorder: Recordable {
 	var isPaused = false
 	var isRecording = false
 	var audioStream: AsyncStream<AVAudioPCMBuffer>?
+	
+	var state: RecordableState {
+		if isPaused { return .paused }
+		if isRecording { return .recording }
+		return .idle
+	}
 	
 	init() {
 		audioEngine = AVAudioEngine()
@@ -66,8 +72,10 @@ class AudioRecorder: Recordable {
 		let format = audioEngine.inputNode.outputFormat(forBus: 0)
 		audioEngine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, time in
 			guard let self else { return }
-			writeBufferToDisk(buffer: buffer)
-			outputContinuation?.yield(buffer)
+			Task { @MainActor in
+				writeBufferToDisk(buffer: buffer)
+				outputContinuation?.yield(buffer)
+			}
 		}
 		
 		audioEngine.prepare()
