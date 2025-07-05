@@ -9,13 +9,18 @@ import Suite
 import AVFoundation
 import SwiftUI
 
-
-extension AudioRecorder {
-	func writeBufferToDisk(buffer: AVAudioPCMBuffer) {
+extension AVAudioFile {
+	nonisolated func writeBufferToDisk(buffer: AVAudioPCMBuffer) {
 		do {
-			try file?.write(from: buffer)
+			try write(from: buffer)
 		} catch {
 			print("file writing error: \(error)")
 		}
+	}
+}
+
+extension AudioRecorder {
+	nonisolated func writeBufferToDisk(buffer: AVAudioPCMBuffer, in file: AVAudioFile?) {
+		file?.writeBufferToDisk(buffer: buffer)
 	}
 }

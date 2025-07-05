@@ -9,13 +9,13 @@ import Foundation
 
 public enum RecordableState: String { case idle, recording, paused }
 
-@MainActor public protocol Recordable: Observable {
-	func record() async throws
-	func pause()
-	func resume() throws
-	func stop()
+public protocol Recordable: Observable {
+	@MainActor func record() async throws
+	@MainActor func pause()
+	@MainActor func resume() throws
+	@MainActor func stop()
 	
-	var state: RecordableState { get }
+	@MainActor var state: RecordableState { get }
 }
 
 public extension RecordableState {

@@ -24,3 +24,14 @@ import SwiftUI
 		return recorder
 	}
 }
+
+extension TranscriptionManager: Recordable {
+	public func record() async throws { try await activeRecorder.record() }
+	public func pause() { activeRecorder.pause() }
+	
+	public func resume() throws { try activeRecorder.resume() }
+	public func stop() { activeRecorder.stop() }
+	public var state: RecordableState { activeRecorder.state }
+	
+	
+}

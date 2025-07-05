@@ -10,9 +10,10 @@ import AVFoundation
 import SwiftUI
 
 extension AVAudioPCMBuffer: @unchecked Sendable { }
+typealias AudioContinuation = AsyncStream<AVAudioPCMBuffer>.Continuation
 
-@Observable class AudioRecorder: Recordable {
-	private var outputContinuation: AsyncStream<AVAudioPCMBuffer>.Continuation? = nil
+@Observable @MainActor class AudioRecorder: Recordable {
+	private var outputContinuation: AudioContinuation? = nil
 	private let audioEngine: AVAudioEngine
 	var playerNode: AVAudioPlayerNode?
 	var file: AVAudioFile?
@@ -70,19 +71,21 @@ extension AVAudioPCMBuffer: @unchecked Sendable { }
 	private func buildAudioStream() async throws -> AsyncStream<AVAudioPCMBuffer> {
 		try setupAudioEngine()
 		let format = audioEngine.inputNode.outputFormat(forBus: 0)
-		audioEngine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, time in
-			guard let self else { return }
-			Task { @MainActor in
-				writeBufferToDisk(buffer: buffer)
-				outputContinuation?.yield(buffer)
-			}
-		}
 		
+		setupInputNode(using: format, on: audioEngine.inputNode, file: file, continuation: outputContinuation)
 		audioEngine.prepare()
 		try audioEngine.start()
 		
 		return AsyncStream(AVAudioPCMBuffer.self, bufferingPolicy: .unbounded) { continuation in
 			outputContinuation = continuation
+		}
+	}
+	
+	nonisolated func setupInputNode(using  format: AVAudioFormat, on inputNode: AVAudioInputNode, file: AVAudioFile?, continuation: AudioContinuation?) {
+		inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, time in
+			print("Writing \(buffer.frameLength) frames")
+			file?.writeBufferToDisk(buffer: buffer)
+			continuation?.yield(buffer)
 		}
 	}
 	
