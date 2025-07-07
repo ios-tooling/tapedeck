@@ -10,7 +10,7 @@ import SwiftUI
 @Observable @MainActor public class TranscriptionManager {
 	public static let instance = TranscriptionManager()
 	
-	var recorders: [AudioRecorder] = []
+	var recorders: [Transcriber] = []
 	
 	public init() { }
 	
@@ -19,7 +19,7 @@ import SwiftUI
 	}
 	
 	func newRecorder() -> Recordable {
-		let recorder = AudioRecorder()
+		let recorder = Transcriber()
 		recorders.append(recorder)
 		return recorder
 	}
@@ -30,7 +30,7 @@ extension TranscriptionManager: Recordable {
 	public func pause() { activeRecorder.pause() }
 	
 	public func resume() throws { try activeRecorder.resume() }
-	public func stop() { activeRecorder.stop() }
+	public func stop() async { await activeRecorder.stop() }
 	public var state: RecordableState { activeRecorder.state }
 	
 	

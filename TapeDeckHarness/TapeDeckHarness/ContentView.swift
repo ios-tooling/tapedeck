@@ -18,25 +18,30 @@ struct ContentView: View {
 	@State var recorder = TranscriptionManager.instance.activeRecorder
 	
 	var body: some View {
-		let _ = print(recorder.state)
+		//let _ = print(recorder.state)
 		VStack {
 			HStack {
 				AsyncButton(action: {
-					switch recorder.state {
-					case .idle: try await recorder.record()
-					case .recording: recorder.pause()
-					case .paused: try recorder.resume()
+					do {
+						switch recorder.state {
+						case .idle: try await recorder.record()
+						case .recording: recorder.pause()
+						case .paused: try recorder.resume()
+						}
+					} catch {
+						print("Failed: \(error)")
 					}
 				}) {
 					Image(systemName: recorder.state.imageName)
 				}
 				
 				if recorder.state != .idle {
-					Button(action: { recorder.stop() }) {
+					AsyncButton(action: { await recorder.stop() }) {
 						Image(systemName: "stop.fill")
 					}
 				}
 			}
+			.font(.system(size: 60))
 		}
 		.onAppear {
 		}

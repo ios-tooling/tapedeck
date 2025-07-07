@@ -13,7 +13,7 @@ public protocol Recordable: Observable {
 	@MainActor func record() async throws
 	@MainActor func pause()
 	@MainActor func resume() throws
-	@MainActor func stop()
+	@MainActor func stop() async
 	
 	@MainActor var state: RecordableState { get }
 }

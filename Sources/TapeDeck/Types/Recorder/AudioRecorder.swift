@@ -83,7 +83,6 @@ typealias AudioContinuation = AsyncStream<AVAudioPCMBuffer>.Continuation
 	
 	nonisolated func setupInputNode(using  format: AVAudioFormat, on inputNode: AVAudioInputNode, file: AVAudioFile?, continuation: AudioContinuation?) {
 		inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, time in
-			print("Writing \(buffer.frameLength) frames")
 			file?.writeBufferToDisk(buffer: buffer)
 			continuation?.yield(buffer)
 		}
