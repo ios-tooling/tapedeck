@@ -8,7 +8,7 @@
 import Suite
 import Speech
 
-@Observable @MainActor class Transcriber {
+@Observable @MainActor class Transcriber: TranscriptionProviding {
 	private var inputBuilder: AsyncStream<AnalyzerInput>.Continuation?
 	private var inputSequence: AsyncStream<AnalyzerInput>?
 	private var recorder: AudioRecorder = AudioRecorder()
@@ -19,7 +19,7 @@ import Speech
 	var modelDownloadProgress: Progress?
 	var converter = AudioBufferConverter()
 	private var recognizerTask: Task<(), Error>?
-	var volatileTranscript: AttributedString = ""
+	var pendingTranscript: AttributedString = ""
 	var finalizedTranscript: AttributedString = ""
 	
 	init() {
@@ -44,9 +44,6 @@ import Speech
 		
 		self.analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber])
 		(inputSequence, inputBuilder) = AsyncStream<AnalyzerInput>.makeStream()
-		
-		guard let inputSequence else { return }
-		
 	}
 }
 
@@ -55,6 +52,27 @@ extension Transcriber: Recordable {
 	
 	func record() async throws {
 		try await setup()
+
+		guard let transcriber else { throw TranscriberError.noTranscriber }
+		guard let inputSequence else { throw TranscriberError.noInputSequence }
+		
+		recognizerTask = Task {
+			do {
+				for try await case let result in transcriber.results {
+					let text = result.text
+					if result.isFinal {
+						finalizedTranscript += text
+						pendingTranscript = ""
+					} else {
+						pendingTranscript = text
+						pendingTranscript.foregroundColor = .red.opacity(0.5)
+					}
+				}
+			} catch {
+				print("speech recognition failed")
+			}
+		}
+
 		Task {
 			do {
 				try await recorder.start { [self] buffer in
@@ -71,29 +89,7 @@ extension Transcriber: Recordable {
 			}
 		}
 		
-		guard let transcriber else { throw TranscriberError.noTranscriber }
-		guard let inputSequence else { throw TranscriberError.noInputSequence }
-		
-		recognizerTask = Task {
-			do {
-				for try await case let result in transcriber.results {
-					let text = result.text
-					if result.isFinal {
-						finalizedTranscript += text
-						volatileTranscript = ""
-						// updateStoryWithNewText(withFinal: text)
-					} else {
-						print("Volatile: \(text)")
-						volatileTranscript = text
-					}
-				}
-			} catch {
-				print("speech recognition failed")
-			}
-		}
-		
 		try await analyzer?.start(inputSequence: inputSequence)
-		
 	}
 	
 	func pause() {

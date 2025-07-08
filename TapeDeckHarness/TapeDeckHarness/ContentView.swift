@@ -20,6 +20,9 @@ struct ContentView: View {
 	var body: some View {
 		//let _ = print(recorder.state)
 		VStack {
+			if let transcriber = recorder as? TranscriptionProviding {
+				TranscribedText(transcriber: transcriber)
+			}
 			HStack {
 				AsyncButton(action: {
 					do {

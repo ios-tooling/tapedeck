@@ -72,7 +72,7 @@ typealias AudioContinuation = AsyncStream<AVAudioPCMBuffer>.Continuation
 		try setupAudioEngine()
 		let format = audioEngine.inputNode.outputFormat(forBus: 0)
 		
-		setupInputNode(using: format, on: audioEngine.inputNode, file: file, continuation: outputContinuation)
+		setupInputNode(using: format, on: audioEngine.inputNode, file: file)
 		audioEngine.prepare()
 		try audioEngine.start()
 		
@@ -81,10 +81,13 @@ typealias AudioContinuation = AsyncStream<AVAudioPCMBuffer>.Continuation
 		}
 	}
 	
-	nonisolated func setupInputNode(using  format: AVAudioFormat, on inputNode: AVAudioInputNode, file: AVAudioFile?, continuation: AudioContinuation?) {
+	nonisolated func setupInputNode(using  format: AVAudioFormat, on inputNode: AVAudioInputNode, file: AVAudioFile?) {
 		inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, time in
 			file?.writeBufferToDisk(buffer: buffer)
-			continuation?.yield(buffer)
+			Task {
+				let continuation = await self.outputContinuation
+				continuation?.yield(buffer)
+			}
 		}
 	}
 	
