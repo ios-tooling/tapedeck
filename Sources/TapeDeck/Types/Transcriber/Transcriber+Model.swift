@@ -39,12 +39,12 @@ extension Transcriber {
 	}
 	
 	func deallocate() async {
-		#if os(iOS)
-			let allocated = await AssetInventory.allocatedLocales
-				for locale in allocated {
-				await AssetInventory.deallocate(locale: locale)
-			}
-		#endif
+//		#if os(iOS)
+//			let allocated = await AssetInventory.allocatedLocales
+//				for locale in allocated {
+//				await AssetInventory.deallocate(locale: locale)
+//			}
+//		#endif
 	}
 }
 
