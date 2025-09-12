@@ -5,8 +5,8 @@
 //  Created by Ben Gottlieb on 7/7/25.
 //
 
-import Foundation
 import AVFoundation
+import Suite
 
 class AudioBufferConverter {
 	enum AudioBufferConverterError: Swift.Error {
@@ -35,12 +35,12 @@ class AudioBufferConverter {
 		}
 		
 		var nsError: NSError?
-		var bufferProcessed = false
+		let bufferProcessed = ThreadsafeMutex(false)
 		
 		let status = converter.convert(to: conversionBuffer, error: &nsError) { packetCount, inputStatusPointer in
-			inputStatusPointer.pointee = bufferProcessed ? .noDataNow : .haveData
-			let result = bufferProcessed ? nil : buffer
-			bufferProcessed = true
+			inputStatusPointer.pointee = bufferProcessed.value ? .noDataNow : .haveData
+			let result = bufferProcessed.value ? nil : buffer
+			bufferProcessed.value = true
 			return result
 		}
 		

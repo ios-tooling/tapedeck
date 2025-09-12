@@ -9,7 +9,7 @@ import Suite
 import AVFoundation
 import SwiftUI
 
-extension AVAudioPCMBuffer: @unchecked Sendable { }
+extension AVAudioPCMBuffer: @retroactive @unchecked Sendable { }
 typealias AudioContinuation = AsyncStream<AVAudioPCMBuffer>.Continuation
 
 @Observable @MainActor class AudioRecorder: Recordable {
@@ -36,7 +36,7 @@ typealias AudioContinuation = AsyncStream<AVAudioPCMBuffer>.Continuation
 		try await record()
 	
 		guard let audioStream else { throw RecorderError.failedToCreateAudioStream }
-		for await input in try await audioStream {
+		for await input in audioStream {
 			try await callback(input)
 		}
 
