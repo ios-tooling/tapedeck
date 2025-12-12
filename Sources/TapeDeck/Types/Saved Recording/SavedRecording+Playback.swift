@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/6/23.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 
@@ -93,3 +94,4 @@ extension SavedRecording {
 		objectWillChange.sendOnMain()
 	}
 }
+#endif

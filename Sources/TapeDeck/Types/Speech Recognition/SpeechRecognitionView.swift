@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/8/24.
 //
 
+#if os(iOS)
 import Suite
 
 public struct SpeechRecognitionView: View {
@@ -56,3 +57,4 @@ public struct SpeechRecognitionView: View {
 		SpeechRecognitionView()
 	}
 }
+#endif

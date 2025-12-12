@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/2/23.
 //
 
+#if os(iOS)
 import Foundation
 
 extension RecordingStore {
@@ -14,3 +15,4 @@ extension RecordingStore {
 		public static let didEndPostRecording = Notification.Name("TapeDeck.RecordingStore.didEndPostRecording")
 	}
 }
+#endif

@@ -5,6 +5,8 @@
 //  Created by Ben Gottlieb on 9/7/23.
 //
 
+#if os(iOS)
+
 import Foundation
 import AVFoundation
 
@@ -76,3 +78,4 @@ extension AudioFileConverter {
 		if deleteSource { try? FileManager.default.removeItem(at: url) }
 	}
 }
+#endif

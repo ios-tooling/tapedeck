@@ -11,6 +11,7 @@ public extension Color {
 	static let siriPurple = Color(hex: 0x5A28D1)
 }
 
+#if os(iOS)
 @available(iOS 15.0, *)
 public struct AmbientWaveformView : View {
 	@ObservedObject var history = Microphone.instance.history
@@ -82,3 +83,4 @@ public struct AmbientWaveformView : View {
 		}
 	}
 }
+#endif

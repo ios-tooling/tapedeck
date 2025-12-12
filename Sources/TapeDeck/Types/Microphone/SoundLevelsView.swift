@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/7/23.
 //
 
+#if os(iOS)
 import SwiftUI
 
 public struct SoundLevelsView: View {
@@ -66,3 +67,4 @@ public struct SoundLevelsView: View {
 #Preview {
 	SoundLevelsView()
 }
+#endif

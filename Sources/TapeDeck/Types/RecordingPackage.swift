@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 1/3/21.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 
@@ -64,3 +65,4 @@ extension RecordingPackage: RecorderOutput {
 	public var containerURL: URL? { recording.containerURL }
 
 }
+#endif

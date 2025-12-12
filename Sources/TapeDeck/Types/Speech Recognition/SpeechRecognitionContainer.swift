@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/12/24.
 //
 
+#if os(iOS)
 import SwiftUI
 
 public struct SpeechRecognitionContainer<Content: View>: View {
@@ -45,3 +46,4 @@ public struct SpeechRecognitionContainer<Content: View>: View {
 		}
 	}
 }
+#endif

@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/1/23.
 //
 
+#if os(iOS)
 import Suite
 import AVFoundation
 import Speech
@@ -159,3 +160,4 @@ extension SpeechTranscriptionist: SFSpeechRecognizerDelegate {
 		print("Speech recognizer availability changed to \(available)")
 	}
 }
+#endif

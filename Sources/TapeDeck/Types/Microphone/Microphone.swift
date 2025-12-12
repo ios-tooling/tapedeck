@@ -11,6 +11,8 @@ import Combine
 import Suite
 import OSLog
 
+#if os(iOS)
+
 @MainActor public class Microphone: NSObject, ObservableObject, MicrophoneListener {
 	static public let instance = Microphone()
 	
@@ -188,3 +190,4 @@ extension Microphone: AVAudioRecorderDelegate {
 }
 
 
+#endif
