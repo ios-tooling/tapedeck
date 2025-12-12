@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ios-tooling/Suite.git",
       "state" : {
-        "branch" : "swift_6",
-        "revision" : "6917c58e78b20ef22d0b225f4fa294d8ec73f7ce"
+        "revision" : "b31482360b0403b13c26bda8fcf8c536add495a5",
+        "version" : "1.2.50"
       }
     },
     {
@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-syntax",
       "state" : {
-        "revision" : "64889f0c732f210a935a0ad7cda38f77f876262d",
-        "version" : "509.1.1"
+        "revision" : "4799286537280063c85a32f09884cfbca301b1a1",
+        "version" : "602.0.0"
       }
     }
   ],

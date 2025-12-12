@@ -6,7 +6,6 @@ import PackageDescription
 let package = Package(
     name: "TapeDeck",
 	 platforms: [
-				 .macOS(.v12),
 				 .iOS(.v15),
 				 .watchOS(.v8)
 		  ],
