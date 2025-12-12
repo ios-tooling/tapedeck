@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/1/23.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 
@@ -57,3 +58,4 @@ extension Float {
 	var double: Double { Double(self) }
 }
 
+#endif

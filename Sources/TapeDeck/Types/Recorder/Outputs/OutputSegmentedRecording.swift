@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 8/13/23.
 //
 
+#if os(iOS)
 import AVFoundation
 import Suite
 
@@ -205,3 +206,4 @@ public actor OutputSegmentedRecording: ObservableObject, RecorderOutput, Equatab
 	}
 }
 
+#endif

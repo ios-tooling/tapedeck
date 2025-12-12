@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/1/23.
 //
 
+#if os(iOS)
 import Foundation
 import Speech
 
@@ -57,3 +58,4 @@ extension SpeechTranscription {
 		public var confidence: Double
 	}
 }
+#endif

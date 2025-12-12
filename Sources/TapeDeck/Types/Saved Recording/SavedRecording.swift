@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/1/23.
 //
 
+#if os(iOS)
 import Foundation
 import CoreAudio
 import SwiftUI
@@ -130,3 +131,4 @@ extension String {
 		}
 	}
 }
+#endif

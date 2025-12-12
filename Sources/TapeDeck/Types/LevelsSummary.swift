@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 8/13/23.
 //
 
+#if os(iOS)
 import Foundation
 import Accelerate
 import Suite
@@ -77,3 +78,4 @@ public class LevelsSummary: Codable, CustomStringConvertible {
 	}
 }
 
+#endif

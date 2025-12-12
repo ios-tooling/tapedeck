@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/8/23.
 //
 
+#if os(iOS)
 import Suite
 import AVFoundation
 
@@ -164,3 +165,4 @@ public class Transcript: Codable, Identifiable, CustomStringConvertible {
 		public let date: Date
 	}
 }
+#endif

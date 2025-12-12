@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 2/23/25.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 
@@ -104,3 +105,4 @@ import AVFoundation
 		playerNode.play()
 	}
 }
+#endif

@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 2/22/25.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 
@@ -67,3 +68,4 @@ public actor RawDataRecorder: RecorderOutput {
 }
 
 
+#endif

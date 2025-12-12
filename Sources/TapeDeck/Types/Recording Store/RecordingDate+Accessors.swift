@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/1/23.
 //
 
+#if os(iOS)
 import Foundation
 
 
@@ -36,3 +37,4 @@ extension RecordingStore {
 		return dates
 	}
 }
+#endif

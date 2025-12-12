@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/10/23.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 import Accelerate
@@ -58,3 +59,4 @@ extension CMSampleBuffer {
 //		 [Int16](UnsafeBufferPointer(start: $0, count: data.count/MemoryLayout<Int16>.stride))
 //	}
 }
+#endif

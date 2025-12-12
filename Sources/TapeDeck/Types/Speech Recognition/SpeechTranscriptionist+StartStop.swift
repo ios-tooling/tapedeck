@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 10/14/24.
 //
 
+#if os(iOS)
 import Suite
 import AVFoundation
 import Speech
@@ -62,3 +63,4 @@ extension SpeechTranscriptionist {
 	}
 
 }
+#endif

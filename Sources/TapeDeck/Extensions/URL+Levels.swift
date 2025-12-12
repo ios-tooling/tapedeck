@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 11/8/24.
 //
 
+#if os(iOS)
 import AVFoundation
 import Accelerate
 
@@ -231,3 +232,4 @@ public final class AudioContext {
 }
 
 
+#endif

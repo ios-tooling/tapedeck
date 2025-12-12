@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/2/23.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 import Suite
@@ -38,3 +39,4 @@ public extension RecordingStore {
 		return mainRecordingDirectory.appendingPathComponent(filename)
 	}
 }
+#endif

@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 2/11/25.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 
@@ -54,3 +55,4 @@ class AudioStreamer {
 		  }
 	 }
 }
+#endif

@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 8/13/23.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 
@@ -23,3 +24,4 @@ public extension Notification {
 		return AVAudioSession.InterruptionType(rawValue: rawValue)
 	}
 }
+#endif

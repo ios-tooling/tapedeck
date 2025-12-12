@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/10/23.
 //
 
+#if os(iOS)
 import Suite
 import AVFoundation
 
@@ -51,3 +52,4 @@ public class AVAudioSessionWrapper {
 		activeCount -= 1
 	}
 }
+#endif

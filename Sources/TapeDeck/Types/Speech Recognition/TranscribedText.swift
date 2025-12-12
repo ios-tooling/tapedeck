@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 10/10/24.
 //
 
+#if os(iOS)
 import SwiftUI
 
 public struct TranscribedText: View {
@@ -27,3 +28,4 @@ public struct TranscribedText: View {
 		.frame(maxWidth: .infinity, alignment: .leading)
 	 }
 }
+#endif

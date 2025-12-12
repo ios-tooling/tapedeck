@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 10/13/24.
 //
 
+#if os(iOS)
 import Suite
 import AVFoundation
 
@@ -66,3 +67,4 @@ public struct SegmentedRecordingChunkInfo: Comparable, Sendable, Identifiable {	
 	}
 }
 
+#endif

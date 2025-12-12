@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/7/23.
 //
 
+#if os(iOS)
 import Suite
 
 public extension Color {
@@ -82,3 +83,4 @@ public struct AmbientWaveformView : View {
 		}
 	}
 }
+#endif

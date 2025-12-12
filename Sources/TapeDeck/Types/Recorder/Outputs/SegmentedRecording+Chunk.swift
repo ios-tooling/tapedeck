@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 10/13/24.
 //
 
+#if os(iOS)
 import AVFoundation
 import Suite
 
@@ -90,3 +91,4 @@ extension String {
 		return "\(String(format: "%06d", chunk)). \(offsetString)-\(duration).\(ext)"
 	}
 }
+#endif

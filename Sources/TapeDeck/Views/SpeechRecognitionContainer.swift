@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/12/24.
 //
 
+#if os(iOS)
 import SwiftUI
 
 public enum SpeechPausePhase { case speakingStopped(TimeInterval), paused }
@@ -70,3 +71,4 @@ public struct SpeechRecognitionContainer<Content: View>: View {
 		}
 	}
 }
+#endif

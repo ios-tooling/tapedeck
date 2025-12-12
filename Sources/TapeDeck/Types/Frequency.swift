@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 8/13/23.
 //
 
+#if os(iOS)
 import Foundation
 
 public struct Frequency: ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral {
@@ -91,3 +92,4 @@ public enum Volume: Codable, CustomStringConvertible, Equatable, Comparable {
 	public static func ==(lhs: Volume, rhs: Volume) -> Bool { lhs.db == rhs.db }
 	public static func <(lhs: Volume, rhs: Volume) -> Bool { lhs.db < rhs.db }
 }
+#endif

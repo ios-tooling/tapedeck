@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 1/3/21.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 
@@ -67,3 +68,4 @@ fileprivate extension URL {
 	var levelsURL: URL { appendingPathComponent("levels.json") }
 	var soundFilesURL: URL { appendingPathComponent("sounds") }
 }
+#endif

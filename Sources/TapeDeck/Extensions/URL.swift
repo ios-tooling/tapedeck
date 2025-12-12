@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 2/11/25.
 //
 
+#if os(iOS)
 import Foundation
 
 extension URL {
@@ -18,3 +19,4 @@ extension URL {
 		}
 	}
 }
+#endif

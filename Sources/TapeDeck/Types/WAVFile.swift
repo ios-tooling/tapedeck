@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/11/23.
 //
 
+#if os(iOS)
 import Foundation
 import Suite
 
@@ -171,3 +172,4 @@ extension String {
 	}
 	
 }
+#endif

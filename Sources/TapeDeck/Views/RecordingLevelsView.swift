@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 9/8/23.
 //
 
+#if os(iOS)
 import SwiftUI
 
 public struct RecordingLevelsView: View {
@@ -77,3 +78,4 @@ extension Array {
 		return results
 	}
 }
+#endif

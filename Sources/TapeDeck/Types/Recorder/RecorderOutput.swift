@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 8/13/23.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 import Suite
@@ -18,5 +19,4 @@ public protocol SamplesHandler: Actor {
 public protocol RecorderOutput: SamplesHandler {	
 	var containerURL: URL? { get }
 }
-
-
+#endif

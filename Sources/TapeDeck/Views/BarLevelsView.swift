@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 10/25/24.
 //
 
+#if os(iOS)
 import SwiftUI
 
 public struct BarLevelsView: View {
@@ -99,3 +100,4 @@ public struct BarLevelsView: View {
 #Preview {
 	BarLevelsView(levels: [])
 }
+#endif
