@@ -100,7 +100,7 @@ import AVFoundation
 		}
 		
 		playerNode.scheduleBuffer(buffer) {
-			self.queueCompletion()
+			Task { await self.queueCompletion() }
 		}
 		playerNode.play()
 	}
