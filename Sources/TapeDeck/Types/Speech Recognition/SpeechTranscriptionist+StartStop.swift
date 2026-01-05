@@ -11,7 +11,7 @@ import AVFoundation
 import Speech
 
 extension SpeechTranscriptionist {
-	@MainActor public func start(textCallback: ((TranscriptionResult) -> Void)? = nil) async throws {
+	public func start(textCallback: ((TranscriptionResult) -> Void)? = nil) async throws {
 		self.textCallback = textCallback
 
 		if isRunning { return }
@@ -34,7 +34,7 @@ extension SpeechTranscriptionist {
 	}
 
 	// iOS 15-18: Legacy SFSpeechRecognizer implementation
-	@MainActor private func startWithLegacyRecognizer() async throws {
+	private func startWithLegacyRecognizer() async throws {
 		inputNode = audioEngine.inputNode
 
 		recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
@@ -59,10 +59,10 @@ extension SpeechTranscriptionist {
 
 	// iOS 26+: New SpeechAnalyzer implementation
 	@available(iOS 26.0, *)
-	@MainActor private func startWithSpeechAnalyzer() async throws {
+	private func startWithSpeechAnalyzer() async throws {
 		// Create transcriber module
 		guard let locale = await SpeechTranscriber.supportedLocale(equivalentTo: Locale.current) else {
-			throw Recorder.RecorderError.noPermissions
+			throw Recorder.RecorderError.unsupportedLanguage
 		}
 		let transcriber = SpeechTranscriber(locale: locale, preset: .progressiveTranscription)
 
@@ -86,18 +86,35 @@ extension SpeechTranscriptionist {
 
 		// Set up audio tap with native format, then convert to required format
 		inputNode = audioEngine.inputNode
-		guard let nativeFormat = inputNode?.outputFormat(forBus: 0) else { return }
-
-		// Create audio converter
-		guard let converter = AVAudioConverter(from: nativeFormat, to: audioFormat) else {
+		guard let nativeFormat = inputNode?.outputFormat(forBus: 0) else {
 			throw Recorder.RecorderError.unableToCreateRecognitionRequest
 		}
 
-		inputNode?.installTap(onBus: 0, bufferSize: 1024, format: nativeFormat) { [weak self] buffer, _ in
-			guard let self else { return }
+		// Validate converter can be created (do this check before installing tap)
+		guard AVAudioConverter(from: nativeFormat, to: audioFormat) != nil else {
+			throw Recorder.RecorderError.unableToCreateRecognitionRequest
+		}
 
-			// Convert buffer to required format
-			guard let convertedBuffer = AVAudioPCMBuffer(pcmFormat: audioFormat, frameCapacity: AVAudioFrameCount(audioFormat.sampleRate * 0.1)) else { return }
+		// Capture continuation outside tap to avoid race condition
+		guard let continuation = self.inputContinuation else {
+			throw Recorder.RecorderError.unableToCreateRecognitionRequest
+		}
+
+		inputNode?.installTap(onBus: 0, bufferSize: 1024, format: nativeFormat) { buffer, _ in
+			// Create converter per-frame for thread safety
+			guard let converter = AVAudioConverter(from: nativeFormat, to: audioFormat) else {
+				logg("Failed to create audio converter")
+				return
+			}
+
+			// Calculate frame capacity based on input buffer and conversion ratio
+			let ratio = audioFormat.sampleRate / nativeFormat.sampleRate
+			let outputFrameCapacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio)
+
+			guard let convertedBuffer = AVAudioPCMBuffer(pcmFormat: audioFormat, frameCapacity: outputFrameCapacity) else {
+				logg("Failed to create converted audio buffer")
+				return
+			}
 
 			var error: NSError?
 			let inputBlock: AVAudioConverterInputBlock = { inNumPackets, outStatus in
@@ -107,13 +124,14 @@ extension SpeechTranscriptionist {
 
 			converter.convert(to: convertedBuffer, error: &error, withInputFrom: inputBlock)
 
-			if error == nil {
-				// Yield converted buffer to analyzer input stream
-				let input = AnalyzerInput(buffer: convertedBuffer)
-				Task { @MainActor in
-					self.inputContinuation?.yield(input)
-				}
+			if let error {
+				logg(error: error, "Audio conversion failed")
+				return
 			}
+
+			// Yield directly - continuation.yield is Sendable and thread-safe
+			let input = AnalyzerInput(buffer: convertedBuffer)
+			continuation.yield(input)
 		}
 
 		audioEngine.prepare()
@@ -121,50 +139,78 @@ extension SpeechTranscriptionist {
 
 		// Start processing results
 		analysisTask = Task { @MainActor in
-			do {
-				// Start analysis concurrently with results processing
-				async let _ = analyzer.analyzeSequence(stream)
+			await withTaskGroup(of: Void.self) { group in
+				// Start analyzer in background
+				group.addTask {
+					do {
+						try await analyzer.analyzeSequence(stream)
+					} catch {
+						logg(error: error, "Analyzer error")
+					}
+				}
 
 				// Process transcription results
-				for try await result in transcriber.results {
-					let text = String(result.text.characters)
+				group.addTask { @MainActor in
+					do {
+						for try await result in transcriber.results {
+							let text = String(result.text.characters)
 
-					// Update our transcription structure
-					self.currentTranscription.updateFromFullTranscript(text, isFinal: result.isFinal)
+							// Update our transcription structure
+							self.currentTranscription.updateFromFullTranscript(text, isFinal: result.isFinal)
 
-					// Send callback with full transcript
-					let fullText = self.currentTranscription.allText
-					let confidence = result.isFinal ? 1.0 : 0.5
-					self.textCallback?(.phrase(fullText, confidence))
+							// Send callback with full transcript
+							let fullText = self.currentTranscription.allText
+							let confidence = result.isFinal ? 1.0 : 0.5
+							self.textCallback?(.phrase(fullText, confidence))
+
+							// Pause detection: if non-final, start timer
+							if !result.isFinal {
+								self.pauseTask?.cancel()
+								self.pauseTask = Task {
+									do {
+										try await Task.sleep(for: .seconds(self.pauseDuration))
+										self.textCallback?(.pause)
+									} catch { }
+								}
+							} else {
+								// Final result, cancel pause timer
+								self.pauseTask?.cancel()
+								self.pauseTask = nil
+							}
+						}
+					} catch {
+						logg(error: error, "Speech analysis error")
+					}
 				}
-			} catch {
-				logg(error: error, "Speech analysis error")
 			}
 		}
 	}
 	
-	@MainActor public func stop() {
+	public func stop() {
 		currentTranscription.finalize()
 
-		if isRunning {
-			audioEngine.stop()
-			isRunning = false
-		}
-
+		// Stop in correct order: tap → cleanup → engine
+		// 1. Remove tap first to stop new audio samples
 		inputNode?.removeTap(onBus: 0)
 
-		// Clean up based on which API was used
+		// 2. Clean up based on which API was used
 		if #available(iOS 26.0, *), speechAnalyzer != nil {
 			stopSpeechAnalyzer()
 		} else {
 			stopLegacyRecognizer()
 		}
 
+		// 3. Stop audio engine last
+		if isRunning {
+			audioEngine.stop()
+			isRunning = false
+		}
+
 		inputNode = nil
 		objectWillChange.send()
 	}
 
-	@MainActor private func stopLegacyRecognizer() {
+	private func stopLegacyRecognizer() {
 		recognitionRequest?.endAudio()
 		recognitionRequest = nil
 		recognitionTask?.cancel()
@@ -172,22 +218,23 @@ extension SpeechTranscriptionist {
 	}
 
 	@available(iOS 26.0, *)
-	@MainActor private func stopSpeechAnalyzer() {
+	private func stopSpeechAnalyzer() {
 		// End the input stream
 		inputContinuation?.finish()
 		inputContinuation = nil
 
-		// Cancel analysis task
+		// Cancel analysis task and wait for completion
 		analysisTask?.cancel()
 		analysisTask = nil
 
-		// Clean up analyzer
+		// Clean up analyzer synchronously
 		if let analyzer = speechAnalyzer {
+			// Cancel and finish analyzer (fire-and-forget is acceptable here as cleanup)
 			Task {
 				try? await analyzer.cancelAndFinishNow()
 			}
+			speechAnalyzer = nil
 		}
-		speechAnalyzer = nil
 	}
 
 }
