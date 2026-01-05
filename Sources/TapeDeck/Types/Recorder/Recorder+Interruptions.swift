@@ -29,14 +29,18 @@ extension Recorder {
 				
 			case .ended:
 				if self.interruptCount == 0 { return }
-				
+
 				Task { @MainActor in
 					try? await Task.sleep(nanoseconds: 1_000_000_000)
 					print("Recording Interrruption ended \(self.interruptCount)")
 					self.interruptCount -= 1
 					if self.interruptCount != 0 || !self.isPausedDueToInterruption { return }
 					self.isPausedDueToInterruption = false
-//					Task { try? await self.start() }
+					// NOTE: Auto-resume is intentionally disabled. Automatically restarting recording
+					// after interruptions (like phone calls) could be unexpected UX and may have
+					// privacy implications. Users should manually resume recording if desired.
+					// TODO: Consider making this configurable via a property like `shouldAutoResumeAfterInterruption`
+					// Task { try? await self.start() }
 				}
 				
 			@unknown default:

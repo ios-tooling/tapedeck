@@ -37,11 +37,11 @@ import OSLog
 
 	override init() {
 		super.init()
-		
+
 		AVAudioSession.interruptionNotification.publisher()
 			.receive(on: RunLoop.main)
 			.sink { note in
-				//self.handleInterruption(note: note)
+				self.handleInterruption(note: note)
 			}.store(in: &cancelBag)
 	}
 
