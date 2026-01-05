@@ -17,7 +17,7 @@ import Speech
 	var inputNode: AVAudioNode?
 	let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))!
 
-	// Legacy API properties (iOS 15-25)
+	// Legacy API properties (iOS 15-18)
 	var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
 	var recognitionTask: SFSpeechRecognitionTask?
 

@@ -33,7 +33,7 @@ extension SpeechTranscriptionist {
 		objectWillChange.send()
 	}
 
-	// iOS 15-25: Legacy SFSpeechRecognizer implementation
+	// iOS 15-18: Legacy SFSpeechRecognizer implementation
 	@MainActor private func startWithLegacyRecognizer() async throws {
 		inputNode = audioEngine.inputNode
 
@@ -129,17 +129,13 @@ extension SpeechTranscriptionist {
 				for try await result in transcriber.results {
 					let text = String(result.text.characters)
 
-					// Update our transcription structure with full transcript
+					// Update our transcription structure
 					self.currentTranscription.updateFromFullTranscript(text, isFinal: result.isFinal)
 
-					// Update callback with new text
-					if text.hasPrefix(self.lastString) {
-						self.fullTranscript += text.dropFirst(self.lastString.count) + " "
-					} else {
-						self.fullTranscript = text + " "
-					}
-					self.lastString = text
-					self.textCallback?(.phrase(text, 1.0))
+					// Send callback with full transcript
+					let fullText = self.currentTranscription.allText
+					let confidence = result.isFinal ? 1.0 : 0.5
+					self.textCallback?(.phrase(fullText, confidence))
 				}
 			} catch {
 				logg(error: error, "Speech analysis error")
