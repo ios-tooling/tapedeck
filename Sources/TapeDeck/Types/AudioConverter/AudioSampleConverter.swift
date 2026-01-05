@@ -34,10 +34,11 @@ import AVFoundation
 			
 			outBuffer.mNumberChannels = 1
 			outBuffer.mDataByteSize = UInt32(samples.count * 2)
-			
+
 			let ptr = UnsafeMutableRawPointer.allocate(byteCount: samples.count * 2, alignment: 2)
+			defer { ptr.deallocate() }
 			outBuffer.mData = ptr
-			
+
 			var inputSize = UInt32(samples.count)
 			let result = AudioConverterFillComplexBuffer(audioConverter!, { converter, packages, dataDescription, data, user in 
 				return 0

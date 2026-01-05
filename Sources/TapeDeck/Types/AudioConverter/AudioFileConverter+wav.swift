@@ -49,7 +49,8 @@ extension AudioFileConverter {
 		let bufferLength: UInt32 = 32768
 		var sourceFrameOffset: UInt32 = 0
 		let buffer = UnsafeMutableRawPointer.allocate(byteCount: Int(bufferLength), alignment: 8)
-		
+		defer { buffer.deallocate() }
+
 		while true {
 			let audioBuffer = AudioBuffer(mNumberChannels: 2, mDataByteSize: bufferLength, mData: buffer)
 			var fillBufList = AudioBufferList(mNumberBuffers: 1, mBuffers: audioBuffer)

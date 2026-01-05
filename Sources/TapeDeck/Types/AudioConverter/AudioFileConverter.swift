@@ -119,10 +119,12 @@ import Suite
 					try self.attempt("ExtAudioFileGetProperty AudioConverterRef") { ExtAudioFileGetProperty(outputRef, kExtAudioFileProperty_AudioConverter, &size, &converter) }
 					
 					// check for interuption handling here
-					
+
 					let bufferByteSize = 32768
 					var currentSourceBytesRead: Int64 = 0
-					let buffer = AudioBuffer(mNumberChannels: clientDesc.mChannelsPerFrame, mDataByteSize: UInt32(bufferByteSize), mData: UnsafeMutableRawPointer.allocate(byteCount: bufferByteSize, alignment: 8))
+					let bufferData = UnsafeMutableRawPointer.allocate(byteCount: bufferByteSize, alignment: 8)
+					defer { bufferData.deallocate() }
+					let buffer = AudioBuffer(mNumberChannels: clientDesc.mChannelsPerFrame, mDataByteSize: UInt32(bufferByteSize), mData: bufferData)
 					let bytesPerFrame = clientDesc.mBytesPerFrame > 0 ? clientDesc.mBytesPerFrame : 1
 					
 					var sampleSkipCount = sourceURL == self.sources.first ? Int64((self.startOffset ?? 0) * sourceDesc.mSampleRate) : 0
