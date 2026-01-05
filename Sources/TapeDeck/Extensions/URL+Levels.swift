@@ -109,7 +109,8 @@ public final class AudioContext {
 		let formatDescriptions = assetTrack.formatDescriptions as! [CMAudioFormatDescription]
 		for item in formatDescriptions {
 			guard let fmtDesc = CMAudioFormatDescriptionGetStreamBasicDescription(item) else {
-				fatalError("Couldn't get the format description")
+				print("Warning: Couldn't get format description for item, skipping")
+				continue
 			}
 			channelCount = Int(fmtDesc.pointee.mChannelsPerFrame)
 		}
@@ -173,9 +174,13 @@ public final class AudioContext {
 		
 		// if (reader.status == AVAssetReaderStatusFailed || reader.status == AVAssetReaderStatusUnknown)
 		guard reader.status == .completed else {
-			fatalError("Couldn't read the audio file")
+			print("Error: Couldn't read the audio file, reader status: \(reader.status.rawValue)")
+			if let error = reader.error {
+				print("Reader error: \(error.localizedDescription)")
+			}
+			return nil
 		}
-		
+
 		return outputSamples
 	}
 	
