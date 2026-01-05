@@ -11,7 +11,8 @@ import SwiftUI
 struct TapeDeckHarnessApp: App {
     var body: some Scene {
         WindowGroup {
-			  LongTermRecordingView()
+			//  LongTermRecordingView()
+			  ContentView()
         }
     }
 }
