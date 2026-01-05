@@ -122,17 +122,15 @@ extension SpeechTranscriptionist {
 		// Start processing results
 		analysisTask = Task { @MainActor in
 			do {
-				// Start analysis (non-blocking)
-				Task {
-					_ = try? await analyzer.analyzeSequence(stream)
-				}
+				// Start analysis concurrently with results processing
+				async let _ = analyzer.analyzeSequence(stream)
 
 				// Process transcription results
 				for try await result in transcriber.results {
 					let text = String(result.text.characters)
 
 					// Update our transcription structure with full transcript
-					self.currentTranscription.updateFromFullTranscript(text, previousText: self.lastString)
+					self.currentTranscription.updateFromFullTranscript(text, isFinal: result.isFinal)
 
 					// Update callback with new text
 					if text.hasPrefix(self.lastString) {
