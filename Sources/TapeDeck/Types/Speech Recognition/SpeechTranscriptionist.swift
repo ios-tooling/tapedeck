@@ -16,9 +16,28 @@ import Speech
 	let audioEngine = AVAudioEngine()
 	var inputNode: AVAudioNode?
 	let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))!
-	
+
+	// Legacy API properties (iOS 15-25)
 	var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
 	var recognitionTask: SFSpeechRecognitionTask?
+
+	// iOS 26+ properties
+	@available(iOS 26.0, *)
+	var speechAnalyzer: SpeechAnalyzer? {
+		get { _speechAnalyzer as? SpeechAnalyzer }
+		set { _speechAnalyzer = newValue }
+	}
+	fileprivate var _speechAnalyzer: Any?
+
+	@available(iOS 26.0, *)
+	var inputContinuation: AsyncStream<AnalyzerInput>.Continuation? {
+		get { _inputContinuation as? AsyncStream<AnalyzerInput>.Continuation }
+		set { _inputContinuation = newValue }
+	}
+	fileprivate var _inputContinuation: Any?
+
+	var analysisTask: Task<Void, Never>?
+
 	var textCallback: ((TranscriptionResult) -> Void)?
 	var observationToken: Any?
 	
