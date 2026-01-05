@@ -34,10 +34,11 @@ public class AVAudioSessionWrapper {
 	public func start() throws {
 		if activeCount > 0 {
 			activeCount += 1
+			return
 		}
-		
+
 		var options: AVAudioSession.CategoryOptions = [.allowBluetoothA2DP, .allowBluetoothHFP, .overrideMutedMicrophoneInterruption, .mixWithOthers]
-		
+
 		if defaultToSpeaker { options.insert(.defaultToSpeaker) }
 		try session.setCategory(.playAndRecord, options: options)
 		try session.setActive(true)
@@ -45,11 +46,13 @@ public class AVAudioSessionWrapper {
 	}
 	
 	public func stop() throws {
-		if activeCount == 1 {
+		guard activeCount > 0 else { return }
+
+		activeCount -= 1
+
+		if activeCount == 0 {
 			try session.setActive(false)
 		}
-		
-		activeCount -= 1
 	}
 }
 #endif
