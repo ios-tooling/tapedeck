@@ -30,7 +30,9 @@ import OSLog
 	}
 	
 	public let history = History()
-	let audioRecorder = try! AVAudioRecorder(url: URL(fileURLWithPath: "/dev/null"), settings: AudioSettings.m4a.settings)
+	private lazy var audioRecorder: AVAudioRecorder? = {
+		try? AVAudioRecorder(url: URL(fileURLWithPath: "/dev/null"), settings: AudioSettings.m4a.settings)
+	}()
 	private var cancelBag: Set<AnyCancellable> = []
 
 	override init() {
@@ -111,7 +113,7 @@ import OSLog
 
 	public func start() async throws { try await start(resettingHistory: false) }
 
-	enum RecordingError: Error { case notAuthorized, failedToRecord }
+	enum RecordingError: Error { case notAuthorized, failedToRecord, audioRecorderUnavailable }
 	
 	public func start(resettingHistory: Bool) async throws {
 		isPausedDueToInterruption = false
@@ -120,23 +122,28 @@ import OSLog
 			if resettingHistory { history.reset() }
 			return
 		}
-		
+
 		if await !AVAudioSessionWrapper.instance.requestRecordingPermissions() { throw RecordingError.notAuthorized }
 
 		//self.history.reset()
-		
+
 		do {
 			try AVAudioSessionWrapper.instance.start()
 		} catch {
 			logg("Error when starting the recorder: \((error as NSError).code.characterCode) \(error.localizedDescription)")
 			throw error
 		}
-		
-		audioRecorder.prepareToRecord()
-		audioRecorder.delegate = self
-		audioRecorder.isMeteringEnabled = true
-		
-		guard audioRecorder.record() else { throw RecordingError.failedToRecord }
+
+		guard let recorder = audioRecorder else {
+			logg("Failed to initialize audio recorder")
+			throw RecordingError.audioRecorderUnavailable
+		}
+
+		recorder.prepareToRecord()
+		recorder.delegate = self
+		recorder.isMeteringEnabled = true
+
+		guard recorder.record() else { throw RecordingError.failedToRecord }
 		isListening = true
 		setupTimer()
 		try await setActive(self)
@@ -158,19 +165,19 @@ import OSLog
 		clearActive(self)
 		if !isListening { return }
 		pollingTimer?.invalidate()
-		audioRecorder.pause()
+		audioRecorder?.pause()
 		isListening = false
 		isPausedDueToInterruption = false
 		objectWillChange.sendOnMain()
 	}
 	
 	func updateLevels() {
-		guard isListening else { return }
-		audioRecorder.updateMeters()
-		
-		let avgFullScale = audioRecorder.averagePower(forChannel: 0)
+		guard isListening, let recorder = audioRecorder else { return }
+		recorder.updateMeters()
+
+		let avgFullScale = recorder.averagePower(forChannel: 0)
 		let environmentDBAvgSPL = Volume(detectedRoomVolume: Double(avgFullScale)) ?? .silence
-	
+
 		self.history.record(volume: environmentDBAvgSPL)
 		objectWillChange.send()
 	}
