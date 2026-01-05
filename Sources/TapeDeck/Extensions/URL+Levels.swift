@@ -106,7 +106,10 @@ public final class AudioContext {
 		reader.add(readerOutput)
 		
 		var channelCount = 1
-		let formatDescriptions = assetTrack.formatDescriptions as! [CMAudioFormatDescription]
+		guard let formatDescriptions = assetTrack.formatDescriptions as? [CMAudioFormatDescription] else {
+			print("Error: Couldn't cast formatDescriptions to [CMAudioFormatDescription]")
+			return nil
+		}
 		for item in formatDescriptions {
 			guard let fmtDesc = CMAudioFormatDescriptionGetStreamBasicDescription(item) else {
 				print("Warning: Couldn't get format description for item, skipping")
