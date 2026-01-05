@@ -158,7 +158,8 @@ import Accelerate
 	}
 	
 	public func removeSamplesHandler(_ handler: SamplesHandler?) {
-		if let index = handlers.firstIndex(where: { $0 === output }) {
+		guard let handler else { return }
+		if let index = handlers.firstIndex(where: { $0 === handler }) {
 			handlers.remove(at: index)
 		}
 	}
