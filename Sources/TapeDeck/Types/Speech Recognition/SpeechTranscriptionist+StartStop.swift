@@ -234,7 +234,7 @@ extension SpeechTranscriptionist {
 				await analyzer.cancelAndFinishNow()
 			}
 			speechAnalyzer = nil
-		}*
+		}
 	}
 
 }
