@@ -143,7 +143,7 @@ extension SpeechTranscriptionist {
 				// Start analyzer in background
 				group.addTask {
 					do {
-						try await analyzer.analyzeSequence(stream)
+						let _ = try await analyzer.analyzeSequence(stream)
 					} catch {
 						logg(error: error, "Analyzer error")
 					}
@@ -231,10 +231,10 @@ extension SpeechTranscriptionist {
 		if let analyzer = speechAnalyzer {
 			// Cancel and finish analyzer (fire-and-forget is acceptable here as cleanup)
 			Task {
-				try? await analyzer.cancelAndFinishNow()
+				await analyzer.cancelAndFinishNow()
 			}
 			speechAnalyzer = nil
-		}
+		}*
 	}
 
 }
