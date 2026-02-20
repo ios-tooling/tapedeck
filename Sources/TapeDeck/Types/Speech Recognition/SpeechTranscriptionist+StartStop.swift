@@ -90,10 +90,11 @@ extension SpeechTranscriptionist {
 			throw Recorder.RecorderError.unableToCreateRecognitionRequest
 		}
 
-		// Validate converter can be created (do this check before installing tap)
-		guard AVAudioConverter(from: nativeFormat, to: audioFormat) != nil else {
+		// Create and store converter once (reused for all audio frames)
+		guard let converter = AVAudioConverter(from: nativeFormat, to: audioFormat) else {
 			throw Recorder.RecorderError.unableToCreateRecognitionRequest
 		}
+		self.audioConverter = converter
 
 		// Capture continuation outside tap to avoid race condition
 		guard let continuation = self.inputContinuation else {
@@ -101,9 +102,9 @@ extension SpeechTranscriptionist {
 		}
 
 		inputNode?.installTap(onBus: 0, bufferSize: 1024, format: nativeFormat) { buffer, _ in
-			// Create converter per-frame for thread safety
-			guard let converter = AVAudioConverter(from: nativeFormat, to: audioFormat) else {
-				logg("Failed to create audio converter")
+			// Reuse the converter created at setup time
+			guard let converter = self.audioConverter else {
+				logg("Audio converter not available")
 				return
 			}
 
@@ -163,19 +164,13 @@ extension SpeechTranscriptionist {
 							let confidence = result.isFinal ? 1.0 : 0.5
 							self.textCallback?(.phrase(fullText, confidence))
 
-							// Pause detection: if non-final, start timer
-							if !result.isFinal {
-								self.pauseTask?.cancel()
-								self.pauseTask = Task {
-									do {
-										try await Task.sleep(for: .seconds(self.pauseDuration))
-										self.textCallback?(.pause)
-									} catch { }
-								}
-							} else {
-								// Final result, cancel pause timer
-								self.pauseTask?.cancel()
-								self.pauseTask = nil
+							// Pause detection: restart timer on every result
+							self.pauseTask?.cancel()
+							self.pauseTask = Task {
+								do {
+									try await Task.sleep(for: .seconds(self.pauseDuration))
+									self.textCallback?(.pause)
+								} catch { }
 							}
 						}
 					} catch {
@@ -226,6 +221,9 @@ extension SpeechTranscriptionist {
 		// Cancel analysis task and wait for completion
 		analysisTask?.cancel()
 		analysisTask = nil
+
+		// Clean up audio converter
+		audioConverter = nil
 
 		// Clean up analyzer synchronously
 		if let analyzer = speechAnalyzer {

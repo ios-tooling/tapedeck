@@ -36,6 +36,9 @@ import Speech
 	}
 	fileprivate var _inputContinuation: Any?
 
+	// Audio converter for iOS 26+ (stored as Any for backward compatibility)
+	var audioConverter: AVAudioConverter?
+
 	var analysisTask: Task<Void, Never>?
 
 	var textCallback: ((TranscriptionResult) -> Void)?
@@ -111,16 +114,14 @@ import Speech
 				}
 				self.lastString = best.formattedString
 				self.textCallback?(.phrase(self.lastString, confidence))
-				
-				if confidence == 0 {
-					if #available(iOS 16.0, *) {
-						self.pauseTask?.cancel()
-						self.pauseTask = Task {
-							do {
-								try await Task.sleep(for: .seconds(self.pauseDuration))
-								self.textCallback?(.pause)
-							} catch { }
-						}
+
+				if #available(iOS 16.0, *) {
+					self.pauseTask?.cancel()
+					self.pauseTask = Task {
+						do {
+							try await Task.sleep(for: .seconds(self.pauseDuration))
+							self.textCallback?(.pause)
+						} catch { }
 					}
 				}
 			}
