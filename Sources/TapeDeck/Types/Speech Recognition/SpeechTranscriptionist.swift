@@ -63,6 +63,11 @@ import Speech
 	public func clearTranscript() {
 		currentTranscription = SpeechTranscription()
 	}
+
+	public func cancelPauseTimer() {
+		pauseTask?.cancel()
+		pauseTask = nil
+	}
 	
 	@objc func didBecomeActive() {
 		objectWillChange.send()
