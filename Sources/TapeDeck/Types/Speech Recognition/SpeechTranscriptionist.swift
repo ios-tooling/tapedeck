@@ -52,7 +52,7 @@ import Speech
 	var lastString = ""
 	var fullTranscript = ""
 	var pauseTask: Task<Void, Never>?
-	var pauseDuration = 3.0
+	public var pauseDuration = 3.0
 	
 	override init() {
 		super.init()
