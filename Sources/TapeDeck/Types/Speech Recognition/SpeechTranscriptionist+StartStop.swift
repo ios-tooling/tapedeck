@@ -43,6 +43,7 @@ extension SpeechTranscriptionist {
 		recognitionRequest.requiresOnDeviceRecognition = true
 
 		guard let recordingFormat = inputNode?.outputFormat(forBus: 0) else { return }
+		inputNode?.removeTap(onBus: 0)
 		inputNode?.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer: AVAudioPCMBuffer, when: AVAudioTime) in
 			self.recognitionRequest?.append(buffer)
 		}
@@ -101,6 +102,7 @@ extension SpeechTranscriptionist {
 			throw Recorder.RecorderError.unableToCreateRecognitionRequest
 		}
 
+		inputNode?.removeTap(onBus: 0)
 		inputNode?.installTap(onBus: 0, bufferSize: 1024, format: nativeFormat) { buffer, _ in
 			// Reuse the converter created at setup time
 			guard let converter = self.audioConverter else {
