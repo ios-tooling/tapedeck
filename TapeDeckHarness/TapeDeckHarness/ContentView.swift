@@ -7,7 +7,6 @@
 
 import Suite
 import TapeDeck
-import Journalist
 
 struct ContentView: View {
 	@State var text: String = ""

@@ -11,7 +11,7 @@ import CoreAudio
 import SwiftUI
 import Suite
 import AVFoundation
-import Journalist
+import Chronicle
 
 public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomStringConvertible, Comparable {
 	public var url: URL
@@ -47,10 +47,14 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	}
 		
 	public func togglePlaying() {
-		if state == .playing {
-			stopPlayback()
-		} else {
-			report { try self.startPlayback() }
+		do {
+			if state == .playing {
+				stopPlayback()
+			} else {
+				try self.startPlayback()
+			}
+		} catch {
+			Chronicle.error(error, description: "Failed to toggle playback.")
 		}
 	}
 	

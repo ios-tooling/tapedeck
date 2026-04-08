@@ -1,21 +1,21 @@
 {
   "pins" : [
     {
-      "identity" : "journalist",
+      "identity" : "swift-syntax",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ios-tooling/Journalist.git",
+      "location" : "https://github.com/swiftlang/swift-syntax",
       "state" : {
-        "revision" : "c2b35ee743638869b65da551074ded4df99f9ce8",
-        "version" : "1.0.12"
+        "revision" : "2b59c0c741e9184ab057fd22950b491076d42e91",
+        "version" : "603.0.0"
       }
     },
     {
-      "identity" : "swift-syntax",
+      "identity" : "tagalong",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-syntax",
+      "location" : "https://github.com/ios-tooling/TagAlong",
       "state" : {
-        "revision" : "4799286537280063c85a32f09884cfbca301b1a1",
-        "version" : "602.0.0"
+        "revision" : "f7ddf6ae68e18703c209923210e8a713beb280f3",
+        "version" : "0.0.4"
       }
     }
   ],
