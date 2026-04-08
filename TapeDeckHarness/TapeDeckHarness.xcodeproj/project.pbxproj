@@ -12,6 +12,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B51403E82D5B97980063FA91 /* Suite */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Suite; path = ../../Suite; sourceTree = "<absolute>"; };
+		B5AECBEE2F85D77C003EABA9 /* Chronicle */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Chronicle; path = /Users/ben/Documents/ManagedProjects/Frameworks/Chronicle; sourceTree = "<absolute>"; };
+		B5EB06142D7B799500DB0E02 /* FileBrowser */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FileBrowser; path = ../../FileBrowser; sourceTree = "<absolute>"; };
 		B5FE38FA2CACAF9700EB82D5 /* TapeDeckHarness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TapeDeckHarness.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -52,6 +55,9 @@
 		B5FE38F12CACAF9700EB82D5 = {
 			isa = PBXGroup;
 			children = (
+				B5AECBEE2F85D77C003EABA9 /* Chronicle */,
+				B5EB06142D7B799500DB0E02 /* FileBrowser */,
+				B51403E82D5B97980063FA91 /* Suite */,
 				B5FE38FC2CACAF9700EB82D5 /* TapeDeckHarness */,
 				B5FE38FB2CACAF9700EB82D5 /* Products */,
 			);
@@ -100,7 +106,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					B5FE38F92CACAF9700EB82D5 = {
 						CreatedOnToolsVersion = 16.0;
@@ -186,6 +192,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = YY6CWUX533;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -209,8 +216,10 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = targeted;
 			};
 			name = Debug;
 		};
@@ -249,6 +258,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = YY6CWUX533;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -265,7 +275,9 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -278,7 +290,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"TapeDeckHarness/Preview Content\"";
-				DEVELOPMENT_TEAM = YY6CWUX533;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TapeDeckHarness/Info.plist;
@@ -297,6 +308,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.standalone.TapeDeckHarness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -310,7 +322,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"TapeDeckHarness/Preview Content\"";
-				DEVELOPMENT_TEAM = YY6CWUX533;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TapeDeckHarness/Info.plist;
@@ -329,6 +340,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.standalone.TapeDeckHarness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -370,7 +382,7 @@
 			repositoryURL = "https://github.com/ios-tooling/filebrowser";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.0.4;
+				minimumVersion = 0.0.5;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

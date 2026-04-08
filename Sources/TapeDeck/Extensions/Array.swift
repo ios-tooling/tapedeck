@@ -5,7 +5,8 @@
 //  Created by Ben Gottlieb on 8/13/23.
 //
 
-import Foundation
+#if os(iOS)
+import Suite
 
 public extension Array where Element == Float {
 	var average: Float {
@@ -83,3 +84,4 @@ extension Array where Element == Int16 {
 		return Int16(sqrt(Double(sum / Int64(count))))
 	}
 }
+#endif

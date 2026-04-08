@@ -5,12 +5,13 @@
 //  Created by Ben Gottlieb on 9/10/23.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 
 // based off of https://stackoverflow.com/questions/42972276/ios-convert-audio-sample-rate-from-16-khz-to-8-khz
 
-class AudioSampleConverter {
+@AudioActor class AudioSampleConverter {
 	static let instance = AudioSampleConverter()
 	
 	var audioConverter: AudioConverterRef?
@@ -33,10 +34,11 @@ class AudioSampleConverter {
 			
 			outBuffer.mNumberChannels = 1
 			outBuffer.mDataByteSize = UInt32(samples.count * 2)
-			
+
 			let ptr = UnsafeMutableRawPointer.allocate(byteCount: samples.count * 2, alignment: 2)
+			defer { ptr.deallocate() }
 			outBuffer.mData = ptr
-			
+
 			var inputSize = UInt32(samples.count)
 			let result = AudioConverterFillComplexBuffer(audioConverter!, { converter, packages, dataDescription, data, user in 
 				return 0
@@ -80,3 +82,4 @@ class AudioSampleConverter {
 
 	}
 }
+#endif

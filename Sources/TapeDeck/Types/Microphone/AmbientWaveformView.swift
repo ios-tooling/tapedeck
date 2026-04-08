@@ -5,13 +5,13 @@
 //  Created by Ben Gottlieb on 9/7/23.
 //
 
+#if os(iOS)
 import Suite
 
 public extension Color {
 	static let siriPurple = Color(hex: 0x5A28D1)
 }
 
-#if os(iOS)
 @available(iOS 15.0, *)
 public struct AmbientWaveformView : View {
 	@ObservedObject var history = Microphone.instance.history

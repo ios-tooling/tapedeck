@@ -5,37 +5,87 @@
 //  Created by Ben Gottlieb on 9/8/23.
 //
 
-import Foundation
+#if os(iOS)
+import Suite
 import AVFoundation
 
-public class Transcript: Codable {
-	var soundLevels: [SoundLevel] = []
-	var segments: [Segment] = []
-	var startDate = Date()
-	var transcriptions: [Transcription] = []
-	var recordedSoundLevelAt = Date.distantPast
-	var soundLevelInterval = 1.0
-	var duration: TimeInterval = 0
-	var saveURL: URL
+extension URL {
+	var transcriptURL: URL {
+		self.deletingPathExtension().appendingPathExtension("transcript")
+	}
+}
+
+public class Transcript: Codable, Identifiable, CustomStringConvertible {
+	public var soundLevels: [SoundLevel] = []
+	public var segments: [Segment] = []
+	public var startDate = Date()
+	public var transcriptions: [Transcription] = []
+	public var recordedSoundLevelAt = Date.distantPast
+	public var soundLevelInterval = 1.0
+	public var duration: TimeInterval = 0
+	public var saveURL: URL
+	
+	public var id: URL { saveURL }
 	
 	static let transcriptFilename = "transcript"
 
 	var isEmpty: Bool { segments.isEmpty }
-
+	public var description: String {
+		duration.durationString(style: .minutes, showLeadingZero: true)
+	}
 	
-	static func load(in url: URL) throws -> Transcript {
-		let jsonURL = url.appendingPathComponent(transcriptFilename, conformingTo: .json)
-		if let data = try? Data(contentsOf: jsonURL), let transcript = try? JSONDecoder().decode(Self.self, from: data) { return transcript }
+	var  segmentURLs: [URL] {
+		get throws {
+			let directory = saveURL.deletingPathExtension()
+			guard directory.isFileURL else { return [] }
+			
+			return try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
+		}
+	}
+	
+	var containerURL: URL? {
+		get throws {
+			let filename = saveURL.deletingPathExtension().lastPathComponent
+			let parent = saveURL.deletingLastPathComponent()
+			let siblings = try FileManager.default.contentsOfDirectory(at: parent, includingPropertiesForKeys: nil)
+			
+			for sibling in siblings {
+				if sibling != saveURL, sibling.deletingPathExtension().lastPathComponent == filename {
+					return sibling
+				}
+			}
+			return nil
+		}
+	}
+	
+	struct NoRecordingSegmentsFoundError: Error { }
+	public func buildRecording() async throws -> OutputSegmentedRecording {
+		guard let url = try containerURL else { throw NoRecordingSegmentsFoundError() }
+		let recording = OutputSegmentedRecording(in: url)
+		await recording.prepare()
+		return recording
+	}
+	
+	public func deleteRecording() throws {
+		try FileManager.default.removeItem(at: saveURL.deletingLastPathComponent())
+	}
+	
+	public static func load(in url: URL) throws -> Transcript {
+		let jsonURL = url.transcriptURL
+		if let data = try? Data(contentsOf: jsonURL), let transcript = try? JSONDecoder().decode(Self.self, from: data) {
+			transcript.saveURL = jsonURL
+			return transcript
+		}
 		
 		return Transcript(container: url)
 	}
 	
 	init(forOutputURL url: URL) {
-		saveURL = url.appendingPathComponent(Self.transcriptFilename, conformingTo: .json)
+		saveURL = url.transcriptURL
 	}
 	
 	init(container url: URL) {
-		saveURL = url.appendingPathComponent(Self.transcriptFilename, conformingTo: .json)
+		saveURL = url.transcriptURL
 		Task { await self.load(url: url) }
 	}
 	
@@ -96,22 +146,23 @@ public class Transcript: Codable {
 		segments.append(.init(offset: start, filename: filename, samples: samples))
 	}
 	
-	struct Segment: Codable {
-		let offset: TimeInterval
-		let filename: String
-		let samples: Int
+	public struct Segment: Codable {
+		public let offset: TimeInterval
+		public let filename: String
+		public let samples: Int
 		
 		func url(basedOn base: URL) -> URL { base.appendingPathComponent(filename).appendingPathExtension("m4a") }
 		func playerItem(basedOn base: URL) -> AVPlayerItem { AVPlayerItem(url: url(basedOn: base)) }
 	}
 	
-	struct SoundLevel: Codable {
-		let offset: TimeInterval
-		let level: Double
+	public struct SoundLevel: Codable {
+		public let offset: TimeInterval
+		public let level: Double
 	}
 	
-	struct Transcription: Codable {
-		let text: String
-		let date: Date
+	public struct Transcription: Codable {
+		public let text: String
+		public let date: Date
 	}
 }
+#endif

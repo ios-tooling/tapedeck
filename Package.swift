@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "TapeDeck",
 	 platforms: [
-				 .macOS(.v15),
-				 .iOS(.v15),
+				 .macOS(.v14),
+				 .iOS(.v17),
 				 .watchOS(.v8)
 		  ],
     products: [
@@ -17,15 +17,15 @@ let package = Package(
             targets: ["TapeDeck"]),
     ],
 	 dependencies: [
-		.package(url: "https://github.com/ios-tooling/Suite.git", branch: "main"),
-		.package(url: "https://github.com/ios-tooling/Journalist.git", from: "1.0.12"),
+		.package(url: "https://github.com/ios-tooling/Suite", from: "1.3.15"),
+		.package(url: "https://github.com/ios-tooling/Chronicle", from: "0.0.22"),
 
 	 ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-			name: "TapeDeck", dependencies: ["Suite", "Journalist"]),
+			name: "TapeDeck", dependencies: ["Suite", "Chronicle"]),
         .testTarget(
             name: "TapeDeckTests",
             dependencies: ["TapeDeck"]),

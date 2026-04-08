@@ -5,11 +5,12 @@
 //  Created by Ben Gottlieb on 8/13/23.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 import Suite
 
-public class OutputDevNull: RecorderOutput {
+public actor OutputDevNull: RecorderOutput {
 	public static let instance = OutputDevNull()
 	
 	public func prepareToRecord() async throws {
@@ -22,6 +23,8 @@ public class OutputDevNull: RecorderOutput {
 		
 	}
 
-	public func endRecording() async throws {
+	public func endRecording() async throws -> URL? {
+		nil
 	}
 }
+#endif

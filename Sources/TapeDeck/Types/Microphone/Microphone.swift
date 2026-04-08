@@ -5,13 +5,12 @@
 //  Created by Ben Gottlieb on 8/13/23.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 import Combine
 import Suite
 import OSLog
-
-#if os(iOS)
 
 @MainActor public class Microphone: NSObject, ObservableObject, MicrophoneListener {
 	static public let instance = Microphone()
@@ -31,17 +30,18 @@ import OSLog
 	}
 	
 	public let history = History()
-	let recordingSession = AVAudioSession.sharedInstance()
-	let audioRecorder = try! AVAudioRecorder(url: URL(fileURLWithPath: "/dev/null"), settings: AudioSettings.m4a.settings)
+	private lazy var audioRecorder: AVAudioRecorder? = {
+		try? AVAudioRecorder(url: URL(fileURLWithPath: "/dev/null"), settings: AudioSettings.m4a.settings)
+	}()
 	private var cancelBag: Set<AnyCancellable> = []
 
 	override init() {
 		super.init()
-		
+
 		AVAudioSession.interruptionNotification.publisher()
 			.receive(on: RunLoop.main)
 			.sink { note in
-				//self.handleInterruption(note: note)
+				self.handleInterruption(note: note)
 			}.store(in: &cancelBag)
 	}
 
@@ -103,47 +103,51 @@ import OSLog
 		if let last = listenerStack.last {
 			listenerStack.removeLast()
 			activeListener = last
-			DispatchQueue.main.async {
-				Task { _ = try? await last.start() }
-			}
+			Task { @MainActor in _ = try? await last.start() }
 		} else {
 			activeListener = nil
 		}
+		
+		if activeListener == nil { isListening = false }
 	}
 
-	@discardableResult
-	public func start() async throws -> Bool {
+	public func start() async throws { try await start(resettingHistory: false) }
+
+	enum RecordingError: Error { case notAuthorized, failedToRecord, audioRecorderUnavailable }
+	
+	public func start(resettingHistory: Bool) async throws {
 		isPausedDueToInterruption = false
 		if isListening {
 			try await setActive(self)
-			return true
+			if resettingHistory { history.reset() }
+			return
 		}
-		
-		if await !AVAudioSessionWrapper.instance.requestRecordingPermissions() { return false }
+
+		if await !AVAudioSessionWrapper.instance.requestRecordingPermissions() { throw RecordingError.notAuthorized }
 
 		//self.history.reset()
-		
+
 		do {
 			try AVAudioSessionWrapper.instance.start()
 		} catch {
 			logg("Error when starting the recorder: \((error as NSError).code.characterCode) \(error.localizedDescription)")
-			return false
+			throw error
 		}
-		
-		audioRecorder.prepareToRecord()
-		audioRecorder.delegate = self
-		audioRecorder.isMeteringEnabled = true
-		
-		self.setupTimer()
-		if audioRecorder.record() {
-			isListening = true
-			setupTimer()
-			try await setActive(self)
-			objectWillChange.sendOnMain()
-			return true
+
+		guard let recorder = audioRecorder else {
+			logg("Failed to initialize audio recorder")
+			throw RecordingError.audioRecorderUnavailable
 		}
-		
-		return false
+
+		recorder.prepareToRecord()
+		recorder.delegate = self
+		recorder.isMeteringEnabled = true
+
+		guard recorder.record() else { throw RecordingError.failedToRecord }
+		isListening = true
+		setupTimer()
+		try await setActive(self)
+		objectWillChange.sendOnMain()
 	}
 	
 	var startedAt: TimeInterval = 0
@@ -161,20 +165,21 @@ import OSLog
 		clearActive(self)
 		if !isListening { return }
 		pollingTimer?.invalidate()
-		audioRecorder.pause()
+		audioRecorder?.pause()
 		isListening = false
 		isPausedDueToInterruption = false
 		objectWillChange.sendOnMain()
 	}
 	
 	func updateLevels() {
-		guard isListening else { return }
-		audioRecorder.updateMeters()
-		
-		let avgFullScale = audioRecorder.averagePower(forChannel: 0)
+		guard isListening, let recorder = audioRecorder else { return }
+		recorder.updateMeters()
+
+		let avgFullScale = recorder.averagePower(forChannel: 0)
 		let environmentDBAvgSPL = Volume(detectedRoomVolume: Double(avgFullScale)) ?? .silence
-	
+
 		self.history.record(volume: environmentDBAvgSPL)
+		objectWillChange.send()
 	}
 	
 	

@@ -13,10 +13,10 @@ import Suite
 import SwiftUI
 import Accelerate
 
-public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampleBufferDelegate, MicrophoneListener {
+@MainActor public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampleBufferDelegate, MicrophoneListener {
 	public static let instance = Recorder()
 	
-	enum RecorderError: String, Error { case notImplementedOnSimulator, unableToAddOutput, unableToAddInput, noValidInputs, cantRecordOnSimulator, unableToCreateRecognitionRequest, unableToCreateRecognitionTask }
+	public enum RecorderError: String, Error { case notImplementedOnSimulator, unableToAddOutput, unableToAddInput, noValidInputs, cantRecordOnSimulator, unableToCreateRecognitionRequest, unableToCreateRecognitionTask, noPermissions, unexpectedState, unsupportedLanguage }
 	
 	public enum State { case idle, running, paused, post }
 	
@@ -37,6 +37,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	var interruptCount = 0
 	var handlers: [SamplesHandler] = []
 	
+	var shouldTranscribe = false
 	var currentAverage: Float = 0.0
 	var currentCount = 0
 	var max: Double = 0
@@ -59,19 +60,18 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		return Double(totalSamplesReceived) / Double(samplingRate)
 	}
 	
-	func start() async throws -> Bool {
-		guard state == .idle else { return false }
+	func start() async throws {
+		guard state == .idle else { throw RecorderError.unexpectedState }
 		
 		do {
 			try await startRecording()
-			return true
 		} catch {
 			logg(error: error, "Problem starting to listen")
+			throw error
 		}
-		return false
 	}
 	
-	public func startRecording(to output: RecorderOutput = OutputDevNull.instance) async throws {
+	public func startRecording(to output: RecorderOutput = OutputDevNull.instance, shouldTranscribe: Bool = false) async throws {
 		if Gestalt.isOnSimulator { logg("CANNOT RECORD ON THE SIMULATOR"); throw RecorderError.cantRecordOnSimulator }
 
 		guard state != .running else {
@@ -101,17 +101,17 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 		}
 
 		audioConnection = audioOutput.connection(with: .audio)
-		session.startRunning()
+		await session.startRunningAsync()
 		startedAt = Date()
 		try await Microphone.instance.setActive(self)
 		state = .running
 		
-		if let url = output.containerURL {
+		if shouldTranscribe, let url = await output.containerURL {
 			activeTranscript = Transcript(forOutputURL: url)
 			activeTranscript?.beginTranscribing()
 		}
 		
-		RecordingStore.instance.didStartRecording(to: output)
+		await RecordingStore.instance.didStartRecording(to: output)
 	}
 	
 	@MainActor public func pause() async throws {
@@ -142,7 +142,7 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 				_ = try await handler.endRecording()
 			}
 		} catch {
-			print("Error when ending the recording: \(error)")
+			print("Error stopping the recording: \(error)")
 		}
 		activeTranscript?.save()
 		removeSamplesHandler(output)
@@ -158,10 +158,20 @@ public class Recorder: NSObject, ObservableObject, AVCaptureAudioDataOutputSampl
 	}
 	
 	public func removeSamplesHandler(_ handler: SamplesHandler?) {
-		if let index = handlers.firstIndex(where: { $0 === output }) {
+		guard let handler else { return }
+		if let index = handlers.firstIndex(where: { $0 === handler }) {
 			handlers.remove(at: index)
 		}
 	}
 	
+}
+
+extension AVCaptureSession {
+	func startRunningAsync() async {
+		let _: Void = await withCheckedContinuation { continuation in
+			self.startRunning()
+			continuation.resume()
+		}
+	}
 }
 #endif

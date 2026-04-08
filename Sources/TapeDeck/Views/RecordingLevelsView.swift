@@ -6,7 +6,6 @@
 //
 
 #if os(iOS)
-
 import SwiftUI
 
 public struct RecordingLevelsView: View {

@@ -11,10 +11,10 @@ import CoreAudio
 import SwiftUI
 import Suite
 import AVFoundation
-import Journalist
+import Chronicle
 
 public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomStringConvertible, Comparable {
-	public let url: URL
+	public var url: URL
 	public var startedAt: Date = Date()
 	public var id: URL { url }
 	public var duration: TimeInterval? { transcript?.duration }
@@ -33,9 +33,11 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	}
 	
 	public var runningDuration: TimeInterval? {
-		if let playbackStartedAt { return Date().timeIntervalSince(playbackStartedAt) }
-		if isActive { return Date().timeIntervalSince(startedAt) }
-		return nil
+		get async {
+			if let playbackStartedAt { return Date().timeIntervalSince(playbackStartedAt) }
+			if await isActive { return Date().timeIntervalSince(startedAt) }
+			return nil
+		}
 	}
 	
 	public var isPackage: Bool { url.pathExtension == RecordingPackage.fileExtension }
@@ -45,16 +47,22 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 	}
 		
 	public func togglePlaying() {
-		if state == .playing {
-			stopPlayback()
-		} else {
-			report { try self.startPlayback() }
+		do {
+			if state == .playing {
+				stopPlayback()
+			} else {
+				try self.startPlayback()
+			}
+		} catch {
+			Chronicle.error(error, description: "Failed to toggle playback.")
 		}
 	}
 	
 	public var isActive: Bool {
-		if !Recorder.instance.isRecording { return false }
-		return Recorder.instance.output?.containerURL?.deletingPathExtension().lastPathComponent == url.deletingPathExtension().lastPathComponent
+		get async {
+			if await !Recorder.instance.isRecording { return false }
+			return await Recorder.instance.output?.containerURL?.deletingPathExtension().lastPathComponent == url.deletingPathExtension().lastPathComponent
+		}
 	}
 	
 	public static func <(lhs: SavedRecording, rhs: SavedRecording) -> Bool {
@@ -71,7 +79,14 @@ public class SavedRecording: ObservableObject, Identifiable, Equatable, CustomSt
 		}
 	}
 	
-	init(url: URL, transcript: Transcript? = nil) {
+	public func move(to url: URL) throws {
+		if self.url == url { return }
+		
+		try FileManager.default.moveItem(at: self.url, to: url)
+		self.url = url
+	}
+	
+	public init(url: URL, transcript: Transcript? = nil) {
 		self.url = url
 		self.transcript = transcript
 		

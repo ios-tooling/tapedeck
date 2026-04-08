@@ -7,7 +7,6 @@
 
 import Suite
 import TapeDeck
-import Journalist
 
 struct ContentView: View {
 	@State var text: String = ""
@@ -15,6 +14,7 @@ struct ContentView: View {
 	@State var isListening = false
 	@ObservedObject var mic = Microphone.instance
 	@ObservedObject var recorder = Recorder.instance
+	
 	var body: some View {
 		VStack {
 			AmbientWaveformView(lineWidth: 1)
@@ -30,16 +30,16 @@ struct ContentView: View {
 				}
 				.frame(width: 45, height: 45)
 
-			SoundLevelsView()
-			SpeechRecognitionView(isRunning: isRunning)
+			SoundLevelsView(verticallyCentered: true, spacerWidth: 2)
+			SpeechRecognitionView(isRunning: $isRunning)
 				.overlay {
 					if !isRunning { Text("Not Recording").bold().opacity(0.25) }
 				}
-//			SpeechRecognitionContainer(text: $text, running: isRunning) { trans in
-//				
-//				TextField("Speak!", text: $text, axis: .vertical)
-//				
-//			}
+			SpeechRecognitionContainer(text: $text, running: $isRunning) { trans in
+				
+				TextField("Speak!", text: $text, axis: .vertical)
+				
+			}
 			
 			HStack {
 				AsyncButton(action: { isRunning.toggle() }) {

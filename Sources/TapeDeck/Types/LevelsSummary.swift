@@ -5,6 +5,7 @@
 //  Created by Ben Gottlieb on 8/13/23.
 //
 
+#if os(iOS)
 import Foundation
 import Accelerate
 import Suite
@@ -64,7 +65,7 @@ public class LevelsSummary: Codable, CustomStringConvertible {
 		if currentBatch.isEmpty { return }
 		let db = 20 * log10(Float(currentBatch.squaredAverage))
 
-		history.append(DataPoint(db))
+		if !db.isNaN, !db.isInfinite { history.append(DataPoint(db)) }
 		currentBatch = []
 	}
 	
@@ -77,3 +78,4 @@ public class LevelsSummary: Codable, CustomStringConvertible {
 	}
 }
 
+#endif

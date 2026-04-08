@@ -10,25 +10,67 @@ import Suite
 import AVFoundation
 import Speech
 
-public class SpeechTranscriptionist: NSObject, ObservableObject {
+@MainActor public class SpeechTranscriptionist: NSObject, ObservableObject {
 	public static let instance = SpeechTranscriptionist()
 	
-	private let audioEngine = AVAudioEngine()
-	private var inputNode: AVAudioNode?
-	private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))!
-	
-	private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-	private var recognitionTask: SFSpeechRecognitionTask?
-	var textCallback: ((String, Double) -> Void)?
+	let audioEngine = AVAudioEngine()
+	var inputNode: AVAudioNode?
+	let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))!
+
+	// Legacy API properties (iOS 15-18)
+	var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+	var recognitionTask: SFSpeechRecognitionTask?
+
+	// iOS 26+ properties
+	@available(iOS 26.0, *)
+	var speechAnalyzer: SpeechAnalyzer? {
+		get { _speechAnalyzer as? SpeechAnalyzer }
+		set { _speechAnalyzer = newValue }
+	}
+	fileprivate var _speechAnalyzer: Any?
+
+	@available(iOS 26.0, *)
+	var inputContinuation: AsyncStream<AnalyzerInput>.Continuation? {
+		get { _inputContinuation as? AsyncStream<AnalyzerInput>.Continuation }
+		set { _inputContinuation = newValue }
+	}
+	fileprivate var _inputContinuation: Any?
+
+	// Audio converter for iOS 26+ (stored as Any for backward compatibility)
+	var audioConverter: AVAudioConverter?
+
+	var analysisTask: Task<Void, Never>?
+
+	var textCallback: ((TranscriptionResult) -> Void)?
 	var observationToken: Any?
+	
+	public enum TranscriptionResult { case phrase(String, Double), pause }
 	
 	@Published public var currentTranscription = SpeechTranscription()
 
 	public var isRunning = false
-
+	var lastString = ""
+	var fullTranscript = ""
+	var pauseTask: Task<Void, Never>?
+	public var pauseDuration = 3.0
+	
 	override init() {
 		super.init()
 		speechRecognizer.delegate = self
+		addAsObserver(of: UIApplication.didBecomeActiveNotification, selector: #selector(didBecomeActive))
+	}
+	
+	public func clearTranscript() {
+		currentTranscription = SpeechTranscription()
+	}
+
+	public func cancelPauseTimer() {
+		pauseTask?.cancel()
+		pauseTask = nil
+	}
+	
+	@objc func didBecomeActive() {
+		objectWillChange.send()
 	}
 	
 	public func requestPermission() async -> Bool {
@@ -47,60 +89,13 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 		if running {
 			try await start()
 		} else {
-			await stop()
-		}
-	}
-	
-	@MainActor public func start(textCallback: ((String, Double) -> Void)? = nil) async throws {
-		if isRunning { return }
-		if Gestalt.isOnSimulator { throw Recorder.RecorderError.notImplementedOnSimulator }
-		
-		if await !requestPermission() { return }
-		inputNode = audioEngine.inputNode
-		
-		self.textCallback = textCallback
-		self.fullTranscript = ""
-		self.currentTranscription = SpeechTranscription()
-		recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-		guard let recognitionRequest else { throw Recorder.RecorderError.unableToCreateRecognitionRequest }
-		recognitionRequest.shouldReportPartialResults = true
-		recognitionRequest.requiresOnDeviceRecognition = true
-		
-		guard let recordingFormat = inputNode?.outputFormat(forBus: 0) else { return }
-		inputNode?.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer: AVAudioPCMBuffer, when: AVAudioTime) in
-			self.recognitionRequest?.append(buffer)
-		}
-		
-		recognitionTask = buildRecognitionTask()
-		
-		if recognitionTask == nil {
 			stop()
-			throw Recorder.RecorderError.unableToCreateRecognitionTask
 		}
-		audioEngine.prepare()
-		try audioEngine.start()
-		isRunning = true
 	}
 	
-	@MainActor public func stop() {
-		currentTranscription.finalize()
-		
-		if isRunning {
-			audioEngine.stop()
-			isRunning = false
-		}
-		
-		inputNode?.removeTap(onBus: 0)
-		recognitionRequest?.endAudio()
-		
-		recognitionRequest = nil
-		inputNode = nil
-		recognitionTask?.cancel()
-		recognitionTask = nil
+	public var isAvailable: Bool {
+		!AVAudioSession.sharedInstance().isOtherAudioPlaying
 	}
-	
-	var lastString = ""
-	var fullTranscript = ""
 	
 	func buildRecognitionTask() -> SFSpeechRecognitionTask? {
 		guard let recognitionRequest else { return nil }
@@ -123,7 +118,17 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 					self.fullTranscript += best.formattedString.dropFirst(self.lastString.count) + " "
 				}
 				self.lastString = best.formattedString
-				self.textCallback?(self.lastString, confidence)
+				self.textCallback?(.phrase(self.lastString, confidence))
+
+				if #available(iOS 16.0, *) {
+					self.pauseTask?.cancel()
+					self.pauseTask = Task {
+						do {
+							try await Task.sleep(for: .seconds(self.pauseDuration))
+							self.textCallback?(.pause)
+						} catch { }
+					}
+				}
 			}
 		}
 
@@ -133,31 +138,30 @@ public class SpeechTranscriptionist: NSObject, ObservableObject {
 
 
 extension SpeechTranscriptionist: SFSpeechRecognitionTaskDelegate {
-	public func speechRecognitionDidDetectSpeech(_ task: SFSpeechRecognitionTask) {
+	nonisolated public func speechRecognitionDidDetectSpeech(_ task: SFSpeechRecognitionTask) {
 		print("Detected speech")
 	}
 	
-	public func speechRecognitionTaskFinishedReadingAudio(_ task: SFSpeechRecognitionTask) {
+	nonisolated public func speechRecognitionTaskFinishedReadingAudio(_ task: SFSpeechRecognitionTask) {
 		print("speechRecognitionTaskFinishedReadingAudio")
 	}
 	
-	public func speechRecognitionTaskWasCancelled(_ task: SFSpeechRecognitionTask) {
+	nonisolated public func speechRecognitionTaskWasCancelled(_ task: SFSpeechRecognitionTask) {
 		print("speechRecognitionTaskWasCancelled")
 	}
 	
 
-	public func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishRecognition result: SFSpeechRecognitionResult) {
+	nonisolated public func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishRecognition result: SFSpeechRecognitionResult) {
 		print("Done Recognizing: \(result.bestTranscription.formattedString)")
 	}
 	
-	public func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishSuccessfully successfully: Bool) {
+	nonisolated public func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishSuccessfully successfully: Bool) {
 		print("Done recognizing successfully: \(successfully)")
 	}
 }
 
 extension SpeechTranscriptionist: SFSpeechRecognizerDelegate {
-	public func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
-		print("Speech recognizer availability changed to \(available)")
+	nonisolated public func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
 	}
 }
 #endif

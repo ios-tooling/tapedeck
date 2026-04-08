@@ -6,16 +6,15 @@
 //
 
 #if os(iOS)
-
 import Foundation
 import AVFoundation
 
 extension AudioFileConverter {
-	public static func convert(m4a url: URL, toWAV outputWAV: URL?, deleteSource: Bool = false) async throws {
+	public static func convert(m4a url: URL, toWAV outputURL: URL?, deleteSource: Bool = false) async throws {
 		var error: OSStatus = noErr
 		var destinationFile: ExtAudioFileRef?
 		var sourceFile: ExtAudioFileRef?
-		let outputURL = outputWAV ?? url.deletingPathExtension().appendingPathExtension("wav")
+		let outputURL = outputURL ?? url.deletingPathExtension().appendingPathExtension("wav")
 
 		var srcFormat = AudioStreamBasicDescription()
 		var dstFormat = AudioStreamBasicDescription()
@@ -50,7 +49,8 @@ extension AudioFileConverter {
 		let bufferLength: UInt32 = 32768
 		var sourceFrameOffset: UInt32 = 0
 		let buffer = UnsafeMutableRawPointer.allocate(byteCount: Int(bufferLength), alignment: 8)
-		
+		defer { buffer.deallocate() }
+
 		while true {
 			let audioBuffer = AudioBuffer(mNumberChannels: 2, mDataByteSize: bufferLength, mData: buffer)
 			var fillBufList = AudioBufferList(mNumberBuffers: 1, mBuffers: audioBuffer)

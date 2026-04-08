@@ -1,42 +1,23 @@
 {
-  "originHash" : "05c838b66e66621840be86f3d61713d64d5cf007095ea903fe28024c4ad83a2e",
   "pins" : [
-    {
-      "identity" : "filebrowser",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ios-tooling/filebrowser",
-      "state" : {
-        "revision" : "fe30626075b49a1304d9a505f3f6d281a192a804",
-        "version" : "0.0.4"
-      }
-    },
-    {
-      "identity" : "journalist",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ios-tooling/Journalist.git",
-      "state" : {
-        "revision" : "c2b35ee743638869b65da551074ded4df99f9ce8",
-        "version" : "1.0.12"
-      }
-    },
-    {
-      "identity" : "suite",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ios-tooling/Suite.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "b83b9c8a5b25af2cfa61a4bbb70b16b55f7c3198"
-      }
-    },
     {
       "identity" : "swift-syntax",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-syntax",
+      "location" : "https://github.com/swiftlang/swift-syntax",
       "state" : {
-        "revision" : "64889f0c732f210a935a0ad7cda38f77f876262d",
-        "version" : "509.1.1"
+        "revision" : "2b59c0c741e9184ab057fd22950b491076d42e91",
+        "version" : "603.0.0"
+      }
+    },
+    {
+      "identity" : "tagalong",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/TagAlong",
+      "state" : {
+        "revision" : "f7ddf6ae68e18703c209923210e8a713beb280f3",
+        "version" : "0.0.4"
       }
     }
   ],
-  "version" : 3
+  "version" : 2
 }

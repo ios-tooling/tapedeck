@@ -10,15 +10,16 @@ import Foundation
 import AVFoundation
 import Suite
 
-public class OutputSingleFileRecording: RecorderOutput {
-	let url: URL
+public actor OutputSingleFileRecording: RecorderOutput, CustomStringConvertible {
+	nonisolated let url: URL
 	
-	var assetWriter: AVAssetWriter!
+	public var assetWriter: AVAssetWriter!
 	var assetWriterInput: AVAssetWriterInput!
 	var sampleRate: Int64 = 44100
 	var samplesRead: Int64 = 0
+	var savedURL: URL?
 	var recordingDuration: TimeInterval { TimeInterval(samplesRead / sampleRate) }
-	var outputType = Recorder.AudioFileType.wav16k
+	public var outputType = Recorder.AudioFileType.wav16k
 	var internalType = Recorder.AudioFileType.wav48k
 	
 	public var containerURL: URL? { url }
@@ -33,7 +34,7 @@ public class OutputSingleFileRecording: RecorderOutput {
 	public func handle(buffer sampleBuffer: CMSampleBuffer) {
 		guard let assetWriterInput else { return }
 		if !assetWriterInput.append(sampleBuffer) {
-			logg("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
+			print("Failed to append buffer, \(self.assetWriter.error?.localizedDescription ?? "unknown error")")
 		}
 		samplesRead += Int64(sampleBuffer.numSamples)
 	}
@@ -52,13 +53,20 @@ public class OutputSingleFileRecording: RecorderOutput {
 		assetWriter.startSession(atSourceTime: CMTime.zero)
 	}
 	
-	public func endRecording() async throws {
+	public func endRecording() async throws -> URL? {
+		if assetWriterInput == nil { return savedURL ?? containerURL }
 		await closeCurrentWriter()
 		
 		if internalType != outputType {
-			let converter = AudioFileConverter(source: url, to: outputType, at: outputType.url(from: url), progress: nil)
-			try await converter.convert()
+			let converter = await AudioFileConverter(source: url, to: outputType, at: outputType.url(from: url), progress: nil)
+			savedURL = try await converter.convert()
+			return savedURL
 		}
+		return containerURL
+	}
+	
+	nonisolated public var description: String {
+		"Audio file at \(url.path)"
 	}
 	
 	func closeCurrentWriter() async {

@@ -6,7 +6,6 @@
 //
 
 #if os(iOS)
-
 import Foundation
 import CoreGraphics
 import Combine
@@ -55,7 +54,7 @@ extension Microphone {
 			return total / Double(recent.count)
 		}
 		
-		func reset() {
+		public func reset() {
 			self.data = []
 			startedAt = Date()
 		}

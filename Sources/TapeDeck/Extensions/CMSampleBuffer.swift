@@ -5,11 +5,20 @@
 //  Created by Ben Gottlieb on 9/10/23.
 //
 
+#if os(iOS)
 import Foundation
 import AVFoundation
 import Accelerate
 
 extension CMSampleBuffer {
+	var sampleData: Data? {
+		let bytes = samples
+		guard !bytes.isEmpty else { return nil }
+
+		let data = bytes.withUnsafeBufferPointer { Data(buffer: $0) }
+		return data
+	}
+
 	public var samples: [Int16] {
 		guard let audioBuffer = CMSampleBufferGetDataBuffer(self) else {
 			 return []
@@ -50,3 +59,4 @@ extension CMSampleBuffer {
 //		 [Int16](UnsafeBufferPointer(start: $0, count: data.count/MemoryLayout<Int16>.stride))
 //	}
 }
+#endif
