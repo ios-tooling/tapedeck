@@ -27,6 +27,7 @@ public struct SpeechRecognitionContainer<Content: View>: View {
 	}
 	
 	func setup(isRunning: Bool) {
+		print("RUnning: \(isRunning)")
 		Task {
 			if !isRunning, transcript.isRunning {
 				transcript.stop()

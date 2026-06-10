@@ -60,6 +60,15 @@ import Accelerate
 		return Double(totalSamplesReceived) / Double(samplingRate)
 	}
 	
+	public func toggle() async throws {
+		print("TOggling recording")
+		if isRecording {
+			try await stop()
+		} else {
+			try await start()
+		}
+	}
+	
 	func start() async throws {
 		guard state == .idle else { throw RecorderError.unexpectedState }
 		

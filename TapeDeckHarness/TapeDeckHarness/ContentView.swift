@@ -51,7 +51,11 @@ struct ContentView: View {
 				}
 				.font(.system(size: 32))
 
-				TapeDeckRecordButton { try? await mic.toggle() }
+				TapeDeckRecordButton {
+					print("Tapped")
+					try? await recorder.toggle()
+				}
+				.border(.blue)
 				
 				AsyncButton(action: {
 					if recorder.isRecording {
@@ -60,7 +64,7 @@ struct ContentView: View {
 						try await recorder.startRecording()
 					}
 				}) {
-					Text(mic.isListening ? "Stop Listening" : "Start Listening")
+					Text(recorder.isRecording ? "Stop Recording" : "Start Recording")
 				}
 			}
 		}

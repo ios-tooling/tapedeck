@@ -8,28 +8,29 @@
 import Suite
 
 public struct TapeDeckRecordButton<Content: View>: View {
-	let content: Content
+	let content: (Bool) -> Content
 	let action: @MainActor () async throws -> Void
+	let useContentBlock: Bool
 
-	@ObservedObject private var mic = Microphone.instance
+	@ObservedObject private var transcriptionist = SpeechTranscriptionist.instance
 	@State private var isShowSettingsAlert = false
 	
-	public init(content: () -> Content) {
-		self.content = content()
+	public init(content: @escaping (Bool) -> Content) {
+		self.content = content
+		useContentBlock = true
 		self.action = { }
 	}
 	
 	public var body: some View {
-		if content is EmptyView {
+		if !useContentBlock {
 			AsyncButton(action: {
 				if TapeDeckPermissions.instance.isDenied {
 					isShowSettingsAlert = true
-					
 				} else {
 					try? await action()
 				}
 			}) {
-				Image(systemName: mic.isListening ? "mic.circle" : "mic.slash.circle")
+				Image(systemName: transcriptionist.isRunning ? "mic.circle" : "mic.slash.circle")
 					.padding()
 			}
 			.font(.system(size: 32))
@@ -41,7 +42,7 @@ public struct TapeDeckRecordButton<Content: View>: View {
 			}
 
 		} else {
-			content
+			content(transcriptionist.isRunning)
 		}
 	}
 	
@@ -51,7 +52,8 @@ public struct TapeDeckRecordButton<Content: View>: View {
 
 extension TapeDeckRecordButton where Content == EmptyView {
 	public init(action: @escaping () async throws -> Void) {
-		self.content = EmptyView()
-		self.action = { }
+		self.content = { _ in EmptyView() }
+		self.action = action
+		self.useContentBlock = false
 	}
 }
