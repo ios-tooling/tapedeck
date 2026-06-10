@@ -15,15 +15,7 @@ public struct SpeechRecognitionView: View {
 	
 	public init(isRunning: Binding<Bool>? = nil) {
 		_fixedIsRunning = isRunning ?? .constant(false)
-		useState = isRunning == nil
-	}
-	
-	var imageName: String {
-		if Gestalt.isOnSimulator { return "mic.slash.circle" }
-		let binding = useState ? $isRunning : $fixedIsRunning
-		
-		if binding.wrappedValue { return "stop.circle.fill" }
-		return "mic.circle.fill"
+		useState = isRunning == nil || Gestalt.isAttachedToDebugger
 	}
 	
 	public var body: some View {
@@ -35,12 +27,7 @@ public struct SpeechRecognitionView: View {
 				.frame(maxWidth: .infinity, alignment: .leading)
 				
 				if useState {
-					AsyncButton(action: { try await toggle() }) {
-						Image(systemName: imageName)
-							.font(.system(size: 32))
-							.foregroundStyle(Gestalt.isOnSimulator ? .red : .accentColor)
-							.padding()
-					}
+					TapeDeckRecordButton { try await toggle() }
 				}
 			}
 			.background {
@@ -49,6 +36,25 @@ public struct SpeechRecognitionView: View {
 			}
 		}
     }
+	
+	var imageName: String {
+		if TapeDeckPermissions.instance.notYetAuthorized { return "mic.slash.circle" }
+		if Gestalt.isOnSimulator { return "mic.slash.circle" }
+		let binding = useState ? $isRunning : $fixedIsRunning
+		
+		if binding.wrappedValue { return "stop.circle.fill" }
+		return "mic.circle.fill"
+	}
+	
+	var imageColor: Color {
+		if TapeDeckPermissions.instance.isDenied { return .red }
+		if TapeDeckPermissions.instance.notYetAuthorized { return .primary.opacity(0.25) }
+
+		guard let hasPermission = TapeDeckPermissions.instance.hasRecordingPermissions else { return .primary.opacity(0.25) }
+		
+		if hasPermission { return .primary }
+		return .red
+	}
 	
 	func toggle() async throws {
 		isRunning.toggle()

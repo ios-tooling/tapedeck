@@ -42,6 +42,8 @@ struct ContentView: View {
 			}
 			
 			HStack {
+				TapeDeckPermissionsView()
+				
 				AsyncButton(action: { isRunning.toggle() }) {
 					Image(systemName: !isRunning ? "circle.fill" : "stop.fill")
 						.foregroundStyle(.red)
@@ -49,11 +51,7 @@ struct ContentView: View {
 				}
 				.font(.system(size: 32))
 
-				AsyncButton(action: { try? await mic.toggle() }) {
-					Image(systemName: mic.isListening ? "microphone.fill" : "microphone.slash")
-						.padding()
-				}
-				.font(.system(size: 32))
+				TapeDeckRecordButton { try? await mic.toggle() }
 				
 				AsyncButton(action: {
 					if recorder.isRecording {

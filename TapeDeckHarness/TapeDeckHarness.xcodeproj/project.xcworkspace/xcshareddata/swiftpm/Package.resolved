@@ -1,6 +1,33 @@
 {
   "pins" : [
     {
+      "identity" : "cloudseeding",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/cloudseeding",
+      "state" : {
+        "revision" : "d25fa5226c974678bd3823c14aeaf6db28827225",
+        "version" : "0.2.1"
+      }
+    },
+    {
+      "identity" : "crossplatformkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/CrossPlatformKit.git",
+      "state" : {
+        "revision" : "c5700b083674d8940315c80c50ac18b729cc84d1",
+        "version" : "1.1.0"
+      }
+    },
+    {
+      "identity" : "fileviewer",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/FileViewer.git",
+      "state" : {
+        "revision" : "f18659c82aac8e02198c1c4b2bff20aa69b621a7",
+        "version" : "0.0.1"
+      }
+    },
+    {
       "identity" : "swift-syntax",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-syntax",
@@ -14,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ios-tooling/TagAlong",
       "state" : {
-        "revision" : "f7ddf6ae68e18703c209923210e8a713beb280f3",
-        "version" : "0.0.4"
+        "revision" : "c15cd80a5870989c6d12ecdcad1e32d81bf550a8",
+        "version" : "0.0.5"
       }
     }
   ],

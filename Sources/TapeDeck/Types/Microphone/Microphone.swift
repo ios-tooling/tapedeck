@@ -116,14 +116,15 @@ import OSLog
 	enum RecordingError: Error { case notAuthorized, failedToRecord, audioRecorderUnavailable }
 	
 	public func start(resettingHistory: Bool) async throws {
+		let hasPermission = await TapeDeckPermissions.instance.hasRecordingPermissions == true
+		if !hasPermission { throw RecordingError.notAuthorized }
+
 		isPausedDueToInterruption = false
 		if isListening {
 			try await setActive(self)
 			if resettingHistory { history.reset() }
 			return
 		}
-
-		if await !AVAudioSessionWrapper.instance.requestRecordingPermissions() { throw RecordingError.notAuthorized }
 
 		//self.history.reset()
 

@@ -73,16 +73,6 @@ import Speech
 		objectWillChange.send()
 	}
 	
-	public func requestPermission() async -> Bool {
-		if SFSpeechRecognizer.authorizationStatus() == .authorized { return true }
-		
-		return await withCheckedContinuation { continuation in
-			SFSpeechRecognizer.requestAuthorization { status in
-				continuation.resume(returning: status == .authorized)
-			}
-		}
-	}
-	
 	public func setRunning(_ running: Bool) async throws {
 		if running == isRunning { return }
 		
@@ -105,6 +95,7 @@ import Speech
 			if let error {
 				let ns = error as NSError
 				if ns.domain == "kAFAssistantErrorDomain", ns.code == 1110 { return }
+				if ns.domain == "kLSRErrorDomain", ns.code == 201 { TapeDeckPermissions.instance.receivedPermissionsError() }
 				print("Recognition Error: \(error)")
 				return
 			}

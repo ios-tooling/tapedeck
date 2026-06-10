@@ -17,20 +17,6 @@ public class AVAudioSessionWrapper {
 	
 	public var defaultToSpeaker = true
 	
-	public var hasRecordingPermissions = CurrentValueSubject<Bool, Never>(AVAudioSession.sharedInstance().recordPermission == .granted)
-
-	public func requestRecordingPermissions() async -> Bool {
-		if hasRecordingPermissions.value { return true }
-		if Gestalt.isOnSimulator { return false }
-
-		return await withCheckedContinuation { continuation in
-			session.requestRecordPermission { granted in
-				self.hasRecordingPermissions.send(granted)
-				continuation.resume(returning: granted)
-			}
-		}
-	}
-
 	public func start() throws {
 		if activeCount > 0 {
 			activeCount += 1

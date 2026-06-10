@@ -67,28 +67,28 @@ struct LongTermRecordingView: View {
 //					player.play(samples: rawData)
 				}
 			}
-			HStack {
-				Button("Files") { fileBrowserURL = root }
-					.fullScreenCover(item: $fileBrowserURL) { url in
-						FileBrowserView(root: url) { fileURL, placement in
-							if fileURL.pathExtension == "data" {
-								if placement == .details {
-									Button("Play Raw") {
-										RawPlayback.instance.playAudio(from: fileURL)
-									}
-									.buttonStyle(.bordered)
-								} else {
-									Button(action: { RawPlayback.instance.playAudio(from: fileURL) }) {
-										Image(systemName: "play.fill")
-									}
-								}
-							}
-						}
-					}
-				
-				Button("Recordings") { listingRecordings.toggle() }
-					.sheet(isPresented: $listingRecordings) { RecordingList(url: root, selectedRecording: $recording) }
-			}
+//			HStack {
+//				Button("Files") { fileBrowserURL = root }
+//					.fullScreenCover(item: $fileBrowserURL) { url in
+//						FileBrowserScreen(root: url) { fileURL, placement in
+//							if fileURL.url.pathExtension == "data" {
+//								if placement == .details {
+//									Button("Play Raw") {
+//										RawPlayback.instance.playAudio(from: fileURL)
+//									}
+//									.buttonStyle(.bordered)
+//								} else {
+//									Button(action: { RawPlayback.instance.playAudio(from: fileURL) }) {
+//										Image(systemName: "play.fill")
+//									}
+//								}
+//							}
+//						}
+//					}
+//				
+//				Button("Recordings") { listingRecordings.toggle() }
+//					.sheet(isPresented: $listingRecordings) { RecordingList(url: root, selectedRecording: $recording) }
+//			}
 			
 			SoundLevelsView(verticallyCentered: true, segmentWidth: 1, spacerWidth: 2)
 				.frame(height: 200)

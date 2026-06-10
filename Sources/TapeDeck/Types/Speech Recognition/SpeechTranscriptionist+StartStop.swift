@@ -17,7 +17,8 @@ extension SpeechTranscriptionist {
 		if isRunning { return }
 		if Gestalt.isOnSimulator { throw Recorder.RecorderError.notImplementedOnSimulator }
 
-		if await !requestPermission() { throw Recorder.RecorderError.noPermissions }
+		if await !TapeDeckPermissions.instance.requestRecordingPermissions() { throw Recorder.RecorderError.noPermissions }
+		if await !TapeDeckPermissions.instance.requestTranscriptionPermission() { throw Recorder.RecorderError.noPermissions }
 
 		self.fullTranscript = ""
 		self.currentTranscription = SpeechTranscription()
