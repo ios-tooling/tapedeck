@@ -1,12 +1,21 @@
 {
   "pins" : [
     {
-      "identity" : "journalist",
+      "identity" : "chronicle",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ios-tooling/Journalist.git",
+      "location" : "https://github.com/ios-tooling/Chronicle",
       "state" : {
-        "revision" : "c2b35ee743638869b65da551074ded4df99f9ce8",
-        "version" : "1.0.12"
+        "revision" : "5a44da99206272e63c299857edff548c95a378a5",
+        "version" : "0.0.29"
+      }
+    },
+    {
+      "identity" : "cloudseeding",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/cloudseeding",
+      "state" : {
+        "revision" : "d25fa5226c974678bd3823c14aeaf6db28827225",
+        "version" : "0.2.1"
       }
     },
     {
@@ -14,17 +23,26 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ios-tooling/Suite.git",
       "state" : {
-        "revision" : "b31482360b0403b13c26bda8fcf8c536add495a5",
-        "version" : "1.2.50"
+        "revision" : "959d2d2f9e696aa25dfe576ba8a7ef5324d8b08a",
+        "version" : "1.4.11"
       }
     },
     {
       "identity" : "swift-syntax",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-syntax",
+      "location" : "https://github.com/swiftlang/swift-syntax",
       "state" : {
-        "revision" : "4799286537280063c85a32f09884cfbca301b1a1",
-        "version" : "602.0.0"
+        "revision" : "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
+        "version" : "603.0.2"
+      }
+    },
+    {
+      "identity" : "tagalong",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/TagAlong",
+      "state" : {
+        "revision" : "c15cd80a5870989c6d12ecdcad1e32d81bf550a8",
+        "version" : "0.0.5"
       }
     }
   ],

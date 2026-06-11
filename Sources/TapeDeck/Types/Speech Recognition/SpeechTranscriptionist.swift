@@ -45,10 +45,18 @@ import Speech
 	var observationToken: Any?
 	
 	public enum TranscriptionResult { case phrase(String, Double), pause }
+
+	// Known SFSpeechRecognizer error codes we handle explicitly.
+	static let afAssistantErrorDomain = "kAFAssistantErrorDomain"
+	static let noSpeechDetectedCode = 1110
+	static let localServiceFailedCode = 1101
+	static let lsrErrorDomain = "kLSRErrorDomain"
+	static let lsrPermissionsCode = 201
 	
 	@Published public var currentTranscription = SpeechTranscription()
 
 	public var isRunning = false
+	var didActivateSession = false
 	var lastString = ""
 	var fullTranscript = ""
 	var pauseTask: Task<Void, Never>?
@@ -94,10 +102,23 @@ import Speech
 		let task = speechRecognizer.recognitionTask(with: recognitionRequest) { result, error in
 			if let error {
 				let ns = error as NSError
-				if ns.domain == "kAFAssistantErrorDomain", ns.code == 1110 { return }
-				if ns.domain == "kLSRErrorDomain", ns.code == 201 { TapeDeckPermissions.instance.receivedPermissionsError() }
-				print("Recognition Error: \(error)")
-				return
+				switch (ns.domain, ns.code) {
+				case (Self.afAssistantErrorDomain, Self.noSpeechDetectedCode):
+					// Benign: the recognizer simply heard no speech in the window.
+					return
+				case (Self.afAssistantErrorDomain, Self.localServiceFailedCode):
+					// The on-device recognition service failed to start (e.g. the
+					// local model isn't installed for this locale). Non-fatal noise;
+					// recognition continues via the server path where available.
+					logg("Local speech recognition unavailable (1101); continuing")
+					return
+				case (Self.lsrErrorDomain, Self.lsrPermissionsCode):
+					TapeDeckPermissions.instance.receivedPermissionsError()
+					return
+				default:
+					logg(error: error, "Recognition Error")
+					return
+				}
 			}
 			
 			self.currentTranscription.replaceRecentText(with: result)

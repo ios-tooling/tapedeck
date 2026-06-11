@@ -23,11 +23,22 @@ extension SpeechTranscriptionist {
 		self.fullTranscript = ""
 		self.currentTranscription = SpeechTranscription()
 
-		// Choose implementation based on iOS version
-		if #available(iOS 26.0, *) {
-			try await startWithSpeechAnalyzer()
-		} else {
-			try await startWithLegacyRecognizer()
+		// The speech service needs an active, record-capable session. Standalone
+		// transcription has no Recorder/Microphone to activate it, so do it here.
+		try AVAudioSessionWrapper.instance.start()
+		didActivateSession = true
+
+		do {
+			// Choose implementation based on iOS version
+			if #available(iOS 26.0, *) {
+				try await startWithSpeechAnalyzer()
+			} else {
+				try await startWithLegacyRecognizer()
+			}
+		} catch {
+			try? AVAudioSessionWrapper.instance.stop()
+			didActivateSession = false
+			throw error
 		}
 
 		isRunning = true
@@ -36,12 +47,16 @@ extension SpeechTranscriptionist {
 
 	// iOS 15-18: Legacy SFSpeechRecognizer implementation
 	private func startWithLegacyRecognizer() async throws {
+		logg("Speech: using legacy SFSpeechRecognizer path (onDevice supported: \(self.speechRecognizer.supportsOnDeviceRecognition))")
 		inputNode = audioEngine.inputNode
 
 		recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
 		guard let recognitionRequest else { throw Recorder.RecorderError.unableToCreateRecognitionRequest }
 		recognitionRequest.shouldReportPartialResults = true
-		recognitionRequest.requiresOnDeviceRecognition = true
+		// Require on-device when supported: needed for offline use and to avoid the ~1 min
+		// server-recognition limit on long recordings. Requires the system to have provisioned
+		// the on-device model (enable Dictation for the language in Settings on iOS < 26).
+		recognitionRequest.requiresOnDeviceRecognition = speechRecognizer.supportsOnDeviceRecognition
 
 		guard let recordingFormat = inputNode?.outputFormat(forBus: 0) else { return }
 		inputNode?.removeTap(onBus: 0)
@@ -66,12 +81,11 @@ extension SpeechTranscriptionist {
 		guard let locale = await SpeechTranscriber.supportedLocale(equivalentTo: Locale.current) else {
 			throw Recorder.RecorderError.unsupportedLanguage
 		}
+		logg("Speech: using iOS 26 SpeechAnalyzer path")
 		let transcriber = SpeechTranscriber(locale: locale, preset: .progressiveTranscription)
 
-		// Check and install required assets
-		if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
-			try await request.downloadAndInstall()
-		}
+		// Reserve + install the on-device model before analysis starts.
+		try await ensureModel(for: transcriber, locale: locale)
 
 		// Create input stream
 		let (stream, continuation) = AsyncStream.makeStream(of: AnalyzerInput.self)
@@ -202,6 +216,12 @@ extension SpeechTranscriptionist {
 		if isRunning {
 			audioEngine.stop()
 			isRunning = false
+		}
+
+		// 4. Release our hold on the audio session.
+		if didActivateSession {
+			try? AVAudioSessionWrapper.instance.stop()
+			didActivateSession = false
 		}
 
 		inputNode = nil
