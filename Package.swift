@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -6,9 +6,8 @@ import PackageDescription
 let package = Package(
     name: "TapeDeck",
 	 platforms: [
-				 .macOS(.v14),
-				 .iOS(.v17),
-				 .watchOS(.v8)
+				 .macOS(.v15),
+				 .iOS(.v18)
 		  ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -17,8 +16,8 @@ let package = Package(
             targets: ["TapeDeck"]),
     ],
 	 dependencies: [
-		.package(url: "https://github.com/ios-tooling/Suite", from: "1.3.15"),
-		.package(url: "https://github.com/ios-tooling/Chronicle", from: "0.0.22"),
+		.package(url: "https://github.com/ios-tooling/Suite", from: "1.4.11"),
+		.package(url: "https://github.com/ios-tooling/Chronicle", from: "0.0.29"),
 
 	 ],
     targets: [
