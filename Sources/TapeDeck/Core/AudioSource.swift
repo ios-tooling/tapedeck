@@ -23,7 +23,7 @@ import AVFoundation
 	private var notificationTokens: [any NSObjectProtocol] = []
 
 	func subscribe() async throws -> AudioSubscription {
-		guard await Permissions.requestMicrophone() else { throw TapeDeckError.microphonePermissionDenied }
+		guard await TapeDeckPermissions.instance.requestMicrophone() else { throw TapeDeckError.microphonePermissionDenied }
 
 		let id = UUID()
 		let stream = AsyncStream<AudioEvent> { continuation in

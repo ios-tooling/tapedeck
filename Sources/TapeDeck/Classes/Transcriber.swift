@@ -36,7 +36,7 @@ import AVFoundation
 
 	public func start() async throws {
 		guard !isTranscribing else { return }
-		guard await Permissions.requestSpeechRecognition() else { throw TapeDeckError.speechRecognitionPermissionDenied }
+		guard await TapeDeckPermissions.instance.requestSpeechRecognition() else { throw TapeDeckError.speechRecognitionPermissionDenied }
 
 		let subscription = try await AudioSource.instance.subscribe()
 		guard let format = subscription.format else { throw TapeDeckError.audioEngineUnavailable }
@@ -83,7 +83,7 @@ import AVFoundation
 
 	public func transcribe(file: AudioFile, locale: Locale = .current) async throws -> TranscribedConversation {
 		guard file.exists else { throw TapeDeckError.fileNotFound(file.url) }
-		guard await Permissions.requestSpeechRecognition() else { throw TapeDeckError.speechRecognitionPermissionDenied }
+		guard await TapeDeckPermissions.instance.requestSpeechRecognition() else { throw TapeDeckError.speechRecognitionPermissionDenied }
 
 		return try await Self.makeBackend().transcribe(url: file.url, locale: locale)
 	}
