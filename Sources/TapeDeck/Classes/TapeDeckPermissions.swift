@@ -61,11 +61,19 @@ import Speech
 	@discardableResult public func requestSpeechRecognition() async -> Bool {
 		if speechRecognition == .granted { return true }
 
-		let status = await withCheckedContinuation { continuation in
-			SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0) }
-		}
+		let status = await Self.requestSpeechAuthorization()
 		speechRecognition = Status(status)
 		return speechRecognition == .granted
+	}
+
+	// `SFSpeechRecognizer.requestAuthorization` invokes its completion on a background
+	// queue. Keeping the continuation in a `nonisolated` context avoids inheriting this
+	// type's `@MainActor` isolation, which would trip the executor-isolation assertion
+	// when the background callback resumes it.
+	private nonisolated static func requestSpeechAuthorization() async -> SFSpeechRecognizerAuthorizationStatus {
+		await withCheckedContinuation { continuation in
+			SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0) }
+		}
 	}
 
 	public func refresh() {
