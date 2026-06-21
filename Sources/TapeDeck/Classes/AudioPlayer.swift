@@ -22,6 +22,7 @@ import AVFoundation
 
 	private let player = AVQueuePlayer()
 	private var timeObserver: Any?
+	private var endObserver: (any NSObjectProtocol)?
 	private var chunks: [RecordingPackage.Manifest.Chunk] = []
 	private var packageURL: URL?
 
@@ -31,7 +32,9 @@ import AVFoundation
 
 		nowPlaying = .file(file)
 		duration = (try? await file.duration()) ?? 0
-		player.insert(AVPlayerItem(url: file.url), after: nil)
+		let item = AVPlayerItem(url: file.url)
+		player.insert(item, after: nil)
+		observeEnd(of: item)
 		beginPlayback()
 	}
 
@@ -44,6 +47,7 @@ import AVFoundation
 		packageURL = package.url
 		duration = package.duration
 		enqueueChunks(startingAt: 0)
+		if let last = player.items().last { observeEnd(of: last) }
 		beginPlayback()
 	}
 
@@ -99,6 +103,16 @@ import AVFoundation
 		isPlaying = true
 	}
 
+	// The periodic time observer stops firing once playback ends, so it can't be relied on
+	// to notice the queue ran dry. Watch the final item finishing instead — scoping the
+	// observer to that specific item means nothing from the notification has to cross an
+	// isolation boundary.
+	private func observeEnd(of item: AVPlayerItem) {
+		endObserver = NotificationCenter.default.addObserver(forName: AVPlayerItem.didPlayToEndTimeNotification, object: item, queue: .main) { _ in
+			MainActor.assumeIsolated { AudioPlayer.instance.stop() }
+		}
+	}
+
 	private func updateCurrentTime() {
 		guard let item = player.currentItem else {
 			if isPlaying { stop() }											// queue ran dry: playback finished
@@ -122,5 +136,7 @@ import AVFoundation
 	private func removeTimeObserver() {
 		if let timeObserver { player.removeTimeObserver(timeObserver) }
 		timeObserver = nil
+		if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+		endObserver = nil
 	}
 }

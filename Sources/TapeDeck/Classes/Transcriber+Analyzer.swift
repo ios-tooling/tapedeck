@@ -55,7 +55,9 @@ import Speech
 		let capacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 64
 		guard let converted = AVAudioPCMBuffer(pcmFormat: analyzerFormat, frameCapacity: capacity) else { return }
 
-		var consumed = false
+		// AVAudioConverter calls this input block synchronously on the calling thread, so the
+		// one-shot `consumed` flag is safe despite the block's @Sendable typing.
+		nonisolated(unsafe) var consumed = false
 		var error: NSError?
 		let status = converter.convert(to: converted, error: &error) { _, inputStatus in
 			if consumed {

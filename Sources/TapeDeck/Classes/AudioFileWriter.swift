@@ -51,16 +51,18 @@ final class AudioFileWriter {
 			throw TapeDeckError.unsupportedAudioFormat
 		}
 
-		var consumed = false
+		// The converter's input block is nominally @Sendable, so a captured mutable flag trips
+		// strict-concurrency checks. Hand the buffer over via a reference box instead; the
+		// block runs synchronously on this thread, so it's safe.
+		let input = SingleBufferInput(buffer)
 		var conversionError: NSError?
 		let status = converter.convert(to: converted, error: &conversionError) { _, inputStatus in
-			if consumed {
+			guard let next = input.take() else {
 				inputStatus.pointee = .noDataNow
 				return nil
 			}
-			consumed = true
 			inputStatus.pointee = .haveData
-			return buffer
+			return next
 		}
 
 		if status == .error { throw conversionError ?? TapeDeckError.unsupportedAudioFormat }
@@ -72,7 +74,21 @@ final class AudioFileWriter {
 	}
 
 	func finish() throws -> AudioFile {
-		try file.close()
+		file.close()
 		return AudioFile(url: url)
+	}
+}
+
+// Hands a single buffer to `AVAudioConverter`'s input block once, then reports "no more
+// data". A reference box so the @Sendable input block can mutate it without capture
+// warnings; only ever touched synchronously from `AudioFileWriter.write`.
+private final class SingleBufferInput: @unchecked Sendable {
+	private var buffer: AVAudioPCMBuffer?
+
+	init(_ buffer: AVAudioPCMBuffer) { self.buffer = buffer }
+
+	func take() -> AVAudioPCMBuffer? {
+		defer { buffer = nil }
+		return buffer
 	}
 }
