@@ -11,14 +11,19 @@
 
 import AVFoundation
 
-actor WaveformExtractor {
-	static let samplesPerSecond: Double = 100
+public actor WaveformExtractor {
+	public static let samplesPerSecond: Double = 100
 
-	struct Source: Sendable, Equatable {
-		let url: URL
-		let timelineStart: TimeInterval
+	public struct Source: Sendable, Equatable {
+		public let url: URL
+		public let timelineStart: TimeInterval
 
-		static func sources(for recording: Recording) -> [Source] {
+		public init(url: URL, timelineStart: TimeInterval) {
+			self.url = url
+			self.timelineStart = timelineStart
+		}
+
+		public static func sources(for recording: Recording) -> [Source] {
 			switch recording {
 			case .file(let file):
 				return [Source(url: file.url, timelineStart: 0)]
@@ -32,6 +37,8 @@ actor WaveformExtractor {
 
 	private var cache: [URL: [Float]] = [:]
 
+	public init() {}
+
 	func envelope(for url: URL) async throws -> [Float] {
 		if let cached = cache[url] { return cached }
 		let envelope = try await Self.decodeEnvelope(url: url, samplesPerSecond: Self.samplesPerSecond)
@@ -41,7 +48,7 @@ actor WaveformExtractor {
 
 	// `bins` normalized peaks across the sources overlapping `range`, max peak
 	// per bin; zeros where there's no audio
-	func peaks(sources: [Source], range: ClosedRange<TimeInterval>, bins: Int) async throws -> [Float] {
+	public func peaks(sources: [Source], range: ClosedRange<TimeInterval>, bins: Int) async throws -> [Float] {
 		guard bins > 0, range.upperBound > range.lowerBound else { return [] }
 
 		var result = [Float](repeating: 0, count: bins)

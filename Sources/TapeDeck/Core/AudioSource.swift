@@ -15,10 +15,17 @@ import AVFoundation
 @MainActor final class AudioSource {
 	static let instance = AudioSource()
 
+	// how the iOS audio session is configured when the mic starts; set before the
+	// first subscriber starts the engine (a change while running takes effect on the
+	// next restart)
+	var configuration = AudioSessionConfiguration.playback
+
 	private(set) var inputFormat: AVAudioFormat?
-	var isRunning: Bool { engine != nil }
+	var isRunning: Bool { isStarted }
 
 	private var engine: AVAudioEngine?
+	private var isStarted = false
+	private var simulatedTask: Task<Void, Never>?
 	private let subscribers = AudioSubscriberRegistry()
 	private var notificationTokens: [any NSObjectProtocol] = []
 
@@ -33,7 +40,7 @@ import AVFoundation
 			}
 		}
 
-		if engine == nil { try start() }
+		if !isStarted { try start() }
 		return AudioSubscription(id: id, events: stream, format: inputFormat)
 	}
 
@@ -43,8 +50,19 @@ import AVFoundation
 	}
 
 	private func start() throws {
+		#if targetEnvironment(simulator)
+			// the simulator has no real audio input; feed synthetic buffers through the
+			// same path so recording and metering can be exercised without a device
+			startSimulated()
+		#else
+			try startEngine()
+		#endif
+		isStarted = true
+	}
+
+	private func startEngine() throws {
 		#if os(iOS)
-			try AudioSession.instance.activate()
+			try AudioSession.instance.activate(configuration)
 		#endif
 
 		let engine = AVAudioEngine()
@@ -75,17 +93,22 @@ import AVFoundation
 	}
 
 	private func stop() {
-		guard let engine else { return }
+		simulatedTask?.cancel()
+		simulatedTask = nil
 
-		engine.inputNode.removeTap(onBus: 0)
-		engine.stop()
-		self.engine = nil
+		if let engine {
+			engine.inputNode.removeTap(onBus: 0)
+			engine.stop()
+			self.engine = nil
+			unregisterForNotifications()
+
+			#if os(iOS)
+				AudioSession.instance.deactivate()
+			#endif
+		}
+
 		inputFormat = nil
-		unregisterForNotifications()
-
-		#if os(iOS)
-			AudioSession.instance.deactivate()
-		#endif
+		isStarted = false
 	}
 
 	func restartAfterConfigurationChange() {
@@ -94,6 +117,30 @@ import AVFoundation
 		stop()
 		try? start()
 		if let inputFormat { subscribers.yield(.formatChanged(inputFormat)) }
+	}
+
+	// MARK: - Simulator
+
+	private func startSimulated() {
+		guard let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1) else { return }
+		inputFormat = format
+
+		let frames: AVAudioFrameCount = 4_410		// 0.1s chunks, matching ~real tap cadence
+		simulatedTask = Task { @MainActor [subscribers] in
+			var sampleTime: AVAudioFramePosition = 0
+			while !Task.isCancelled {
+				if let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) {
+					buffer.frameLength = frames
+					if let channel = buffer.floatChannelData?[0] {
+						for index in 0..<Int(frames) { channel[index] = Float.random(in: -0.03...0.03) }
+					}
+					let time = AVAudioTime(sampleTime: sampleTime, atRate: format.sampleRate)
+					subscribers.yield(.audio(CapturedAudio(buffer: buffer, time: time, level: AudioLevel(buffer: buffer))))
+					sampleTime += AVAudioFramePosition(frames)
+				}
+				try? await Task.sleep(nanoseconds: 100_000_000)
+			}
+		}
 	}
 }
 

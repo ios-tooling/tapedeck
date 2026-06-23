@@ -13,19 +13,22 @@ import AVFoundation
 @MainActor final class AudioSession {
 	static let instance = AudioSession()
 
-	var defaultToSpeaker = true
-
 	private let session = AVAudioSession.sharedInstance()
 	private var activeCount = 0
 
-	func activate() throws {
+	func activate(_ configuration: AudioSessionConfiguration) throws {
 		activeCount += 1
 		guard activeCount == 1 else { return }
 
-		var options: AVAudioSession.CategoryOptions = [.allowBluetoothA2DP, .allowBluetoothHFP, .overrideMutedMicrophoneInterruption, .mixWithOthers]
-		if defaultToSpeaker { options.insert(.defaultToSpeaker) }
+		// A2DP and defaultToSpeaker are output-only options — valid only with a
+		// playback-capable category. Including them with `.record` returns OSStatus -50.
+		var options: AVAudioSession.CategoryOptions = [.allowBluetoothHFP, .overrideMutedMicrophoneInterruption, .mixWithOthers]
+		if configuration.category == .playAndRecord {
+			options.insert(.allowBluetoothA2DP)
+			if configuration.defaultToSpeaker { options.insert(.defaultToSpeaker) }
+		}
 
-		try session.setCategory(.playAndRecord, options: options)
+		try session.setCategory(configuration.category.avCategory, mode: configuration.mode.avMode, options: options)
 		try session.setActive(true)
 	}
 
@@ -35,6 +38,24 @@ import AVFoundation
 
 		if activeCount == 0 {
 			try? session.setActive(false, options: .notifyOthersOnDeactivation)
+		}
+	}
+}
+
+private extension AudioSessionConfiguration.Category {
+	var avCategory: AVAudioSession.Category {
+		switch self {
+		case .playAndRecord: .playAndRecord
+		case .record: .record
+		}
+	}
+}
+
+private extension AudioSessionConfiguration.Mode {
+	var avMode: AVAudioSession.Mode {
+		switch self {
+		case .default: .default
+		case .measurement: .measurement
 		}
 	}
 }

@@ -23,6 +23,13 @@ import AVFoundation
 
 	public var normalizedLevel: Double { currentLevel.normalized(floor: noiseFloor) }
 
+	// audio-session category/mode used while listening; set before starting. Use
+	// `.measurement` to disable automatic gain control for accurate level metering.
+	public var sessionConfiguration: AudioSessionConfiguration {
+		get { AudioSource.instance.configuration }
+		set { AudioSource.instance.configuration = newValue }
+	}
+
 	private var subscription: AudioSubscription?
 	private var listenTask: Task<Void, Never>?
 

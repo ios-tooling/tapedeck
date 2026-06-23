@@ -25,6 +25,13 @@ import AVFoundation
 	public private(set) var currentLevel = AudioLevel.silent
 	public var resumesAfterInterruption = false
 
+	// audio-session category/mode used while recording; set before starting. Use
+	// `.measurement` to disable automatic gain control for accurate level metering.
+	public var sessionConfiguration: AudioSessionConfiguration {
+		get { AudioSource.instance.configuration }
+		set { AudioSource.instance.configuration = newValue }
+	}
+
 	private let session = RecordingSession()
 	private var subscription: AudioSubscription?
 	private var pumpTask: Task<Void, Never>?

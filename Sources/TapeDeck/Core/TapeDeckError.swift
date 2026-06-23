@@ -18,4 +18,6 @@ public enum TapeDeckError: Error, Sendable {
 	case transcriptionUnavailable
 	case transcriptionAssetsUnavailable
 	case fileNotFound(URL)
+	case exportRangeOutOfBounds
+	case exportFailed
 }
