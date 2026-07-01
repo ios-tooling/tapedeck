@@ -17,6 +17,13 @@ import AVFoundation
 	public private(set) var conversation = TranscribedConversation()
 	public var locale = Locale.current
 
+	// Live input level off the shared mic tap, and a derived speech/silence flag.
+	// Updated while transcribing; consumers can use these for VAD-style pause detection.
+	public private(set) var inputLevel: AudioLevel = .silent
+	public private(set) var isSpeaking = false
+	/// Average (RMS) dBFS at or above which input counts as speech (≤ 0). Tune per environment.
+	public var speechThreshold: Double = -40
+
 	public var finalizedText: String { conversation.finalizedText }
 	public var tentativeText: String { conversation.tentativeText }
 
@@ -56,7 +63,9 @@ import AVFoundation
 		pumpTask = Task {
 			for await event in subscription.events {
 				switch event {
-				case .audio(let captured): backend.feed(captured)
+				case .audio(let captured):
+					backend.feed(captured)
+					updateActivity(captured.level)
 				case .formatChanged(let format): backend.inputFormatChanged(to: format)
 				case .interruptionBegan, .interruptionEnded: break
 				}
@@ -74,6 +83,8 @@ import AVFoundation
 		await backend?.stopLive()
 		backend = nil
 		isTranscribing = false
+		inputLevel = .silent
+		isSpeaking = false
 
 		// anything still tentative when we stop is as final as it will ever get
 		if let last = conversation.utterances.last(where: { !$0.isFinal }) {
@@ -86,6 +97,11 @@ import AVFoundation
 		guard await TapeDeckPermissions.instance.requestSpeechRecognition() else { throw TapeDeckError.speechRecognitionPermissionDenied }
 
 		return try await Self.makeBackend().transcribe(url: file.url, locale: locale)
+	}
+
+	private func updateActivity(_ level: AudioLevel) {
+		inputLevel = level
+		isSpeaking = level.decibels >= speechThreshold
 	}
 
 	private func apply(_ update: TranscriptionUpdate) {
