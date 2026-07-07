@@ -10,6 +10,11 @@
 
 import AVFoundation
 
+// stdout so the messages show in the Xcode console even when OS_ACTIVITY_MODE is disabled
+func tapeDeckDebugLog(_ message: String) {
+	print("🎙️ TapeDeck: \(message)")
+}
+
 @MainActor @Observable public class Transcriber {
 	public static let instance = Transcriber()
 
@@ -59,17 +64,24 @@ import AVFoundation
 		self.subscription = subscription
 		self.backend = backend
 		isTranscribing = true
+		tapeDeckDebugLog("live transcription started: backend \(type(of: backend)), input \(format)")
 
 		pumpTask = Task {
+			var buffers = 0
 			for await event in subscription.events {
 				switch event {
 				case .audio(let captured):
+					buffers += 1
+					if buffers == 1 || buffers % 200 == 0 { tapeDeckDebugLog("fed \(buffers) buffer(s) to the backend") }
 					backend.feed(captured)
 					updateActivity(captured.level)
-				case .formatChanged(let format): backend.inputFormatChanged(to: format)
+				case .formatChanged(let format):
+					tapeDeckDebugLog("input format changed to \(format)")
+					backend.inputFormatChanged(to: format)
 				case .interruptionBegan, .interruptionEnded: break
 				}
 			}
+			tapeDeckDebugLog("audio pump ended after \(buffers) buffer(s)")
 		}
 	}
 
@@ -104,12 +116,17 @@ import AVFoundation
 		isSpeaking = level.decibels >= speechThreshold
 	}
 
+	private var appliedTentativeCount = 0
+
 	private func apply(_ update: TranscriptionUpdate) {
 		switch update {
 		case .tentative(let text):
+			appliedTentativeCount += 1
+			if appliedTentativeCount <= 3 { tapeDeckDebugLog("tentative text: '\(text)'") }
 			conversation.replaceTentative(with: text.isEmpty ? nil : Utterance(text: text))
 
 		case .finalized(let utterance):
+			tapeDeckDebugLog("finalized utterance: '\(utterance.text)'")
 			conversation.replaceTentative(with: nil)
 			conversation.append(utterance)
 			utteranceRelay.yield(utterance)

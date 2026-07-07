@@ -85,6 +85,7 @@ import Speech
 		if let error {
 			let ns = error as NSError
 			if ns.domain == "kAFAssistantErrorDomain", ns.code == 1110 { return }	// no speech detected
+			tapeDeckDebugLog("recognition error, rebuilding request: \(error)")
 			buildRequest()																		// recover and keep listening
 			return
 		}

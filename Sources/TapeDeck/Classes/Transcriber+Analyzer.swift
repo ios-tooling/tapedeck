@@ -28,6 +28,7 @@ import Speech
 		}
 		self.analyzerFormat = analyzerFormat
 		inputFormatChanged(to: format)
+		tapeDeckDebugLog("analyzer live start: analyzer format \(analyzerFormat), converting: \(converter != nil)")
 
 		let (stream, continuation) = AsyncStream.makeStream(of: AnalyzerInput.self)
 		inputContinuation = continuation
@@ -36,12 +37,19 @@ import Speech
 		self.analyzer = analyzer
 
 		analysisTask = Task {
-			_ = try? await analyzer.analyzeSequence(stream)
+			do {
+				_ = try await analyzer.analyzeSequence(stream)
+				tapeDeckDebugLog("analyzeSequence finished")
+			} catch {
+				tapeDeckDebugLog("analyzeSequence FAILED: \(error)")
+			}
 		}
 		resultsTask = Task { @MainActor in
 			await Self.relayResults(from: transcriber, to: onUpdate)
 		}
 	}
+
+	private var conversionFailures = 0
 
 	func feed(_ captured: CapturedAudio) {
 		guard let analyzerFormat, let inputContinuation else { return }
@@ -69,7 +77,13 @@ import Speech
 			return buffer
 		}
 
-		guard status != .error, converted.frameLength > 0 else { return }
+		guard status != .error, converted.frameLength > 0 else {
+			conversionFailures += 1
+			if conversionFailures == 1 || conversionFailures % 50 == 0 {
+				tapeDeckDebugLog("buffer conversion failing (\(conversionFailures)x): status \(status.rawValue), error \(error?.localizedDescription ?? "none"), input \(buffer.format)")
+			}
+			return
+		}
 		inputContinuation.yield(AnalyzerInput(buffer: converted))
 	}
 
@@ -141,6 +155,9 @@ import Speech
 					onUpdate(.tentative(text))
 				}
 			}
-		} catch { }
+			tapeDeckDebugLog("analyzer results stream ended")
+		} catch {
+			tapeDeckDebugLog("analyzer results stream FAILED: \(error)")
+		}
 	}
 }

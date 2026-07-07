@@ -11,9 +11,9 @@ import AVFoundation
 
 struct AudioLevelTests {
 	@Test func decibelsFromRMS() {
-		#expect(abs(AudioLevel.decibels(rms: 1.0)) < 0.0001)								// full scale → 0 dB
-		#expect(abs(AudioLevel.decibels(rms: 0.5) - -6.0206) < 0.001)					// half scale → ≈ -6 dB
-		#expect(AudioLevel.decibels(rms: 0) == AudioLevel.silent.decibels)			// silence clamps, no -inf
+		#expect(abs(AudioLevel.decibels(magnitude: 1.0)) < 0.0001)							// full scale → 0 dB
+		#expect(abs(AudioLevel.decibels(magnitude: 0.5) - -6.0206) < 0.001)				// half scale → ≈ -6 dB
+		#expect(AudioLevel.decibels(magnitude: 0) == AudioLevel.silent.decibels)		// silence clamps, no -inf
 	}
 
 	@Test func normalizedMapsFloorToZeroAndFullScaleToOne() {
@@ -36,7 +36,7 @@ struct AudioLevelTests {
 		let samples = try #require(buffer.floatChannelData)
 		for index in 0..<1024 { samples[0][index] = 0.5 }
 
-		#expect(abs(AudioLevel.rms(of: buffer) - 0.5) < 0.0001)
+		#expect(abs(AudioLevel.measure(buffer).rms - 0.5) < 0.0001)
 		#expect(abs(AudioLevel(buffer: buffer).decibels - -6.0206) < 0.001)
 	}
 
@@ -44,7 +44,7 @@ struct AudioLevelTests {
 		let format = try #require(AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1))
 		let buffer = try #require(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1024))
 
-		#expect(AudioLevel.rms(of: buffer) == 0)
+		#expect(AudioLevel.measure(buffer).rms == 0)
 		#expect(AudioLevel(buffer: buffer).normalized == 0)
 	}
 }
