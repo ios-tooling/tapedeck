@@ -17,11 +17,13 @@ import Speech
 	private var request: SFSpeechAudioBufferRecognitionRequest?
 	private var task: SFSpeechRecognitionTask?
 	private var onUpdate: (@MainActor (TranscriptionUpdate) -> Void)?
+	private var useOnDeviceRecognition = true
 
 	func startLive(format: AVAudioFormat, locale: Locale, onUpdate: @escaping @MainActor (TranscriptionUpdate) -> Void) async throws {
 		let recognizer = try Self.recognizer(for: locale)
 		self.recognizer = recognizer
 		self.onUpdate = onUpdate
+		useOnDeviceRecognition = recognizer.supportsOnDeviceRecognition
 		buildRequest()
 	}
 
@@ -42,9 +44,19 @@ import Speech
 
 	func transcribe(url: URL, locale: Locale) async throws -> TranscribedConversation {
 		let recognizer = try Self.recognizer(for: locale)
+
+		do {
+			return try await Self.transcribe(url: url, with: recognizer, onDevice: recognizer.supportsOnDeviceRecognition)
+		} catch where Self.indicatesOnDeviceRecognitionUnavailable(error) {
+			tapeDeckDebugLog("on-device file transcription unavailable; retrying via server")
+			return try await Self.transcribe(url: url, with: recognizer, onDevice: false)
+		}
+	}
+
+	private static func transcribe(url: URL, with recognizer: SFSpeechRecognizer, onDevice: Bool) async throws -> TranscribedConversation {
 		let request = SFSpeechURLRecognitionRequest(url: url)
 		request.shouldReportPartialResults = false
-		request.requiresOnDeviceRecognition = recognizer.supportsOnDeviceRecognition
+		request.requiresOnDeviceRecognition = onDevice
 
 		return try await withCheckedThrowingContinuation { continuation in
 			let guarded = ResumeGuard(continuation)
@@ -56,6 +68,12 @@ import Speech
 				}
 			}
 		}
+	}
+
+	// kLSRErrorDomain is Local Speech Recognition: the on-device recognizer refusing to
+	// run (e.g. code 201, "Siri and Dictation are disabled"), distinct from speech errors
+	static func indicatesOnDeviceRecognitionUnavailable(_ error: Error) -> Bool {
+		(error as NSError).domain == "kLSRErrorDomain"
 	}
 
 	private static func recognizer(for locale: Locale) throws -> SFSpeechRecognizer {
@@ -71,7 +89,7 @@ import Speech
 
 		let request = SFSpeechAudioBufferRecognitionRequest()
 		request.shouldReportPartialResults = true
-		request.requiresOnDeviceRecognition = recognizer.supportsOnDeviceRecognition
+		request.requiresOnDeviceRecognition = useOnDeviceRecognition
 		self.request = request
 
 		task = recognizer.recognitionTask(with: request) { [weak self] result, error in
@@ -85,6 +103,16 @@ import Speech
 		if let error {
 			let ns = error as NSError
 			if ns.domain == "kAFAssistantErrorDomain", ns.code == 1110 { return }	// no speech detected
+
+			// on-device recognition reports as supported but refuses to run when Siri and
+			// Dictation are both disabled in Settings; recover via server-based recognition
+			if useOnDeviceRecognition, Self.indicatesOnDeviceRecognitionUnavailable(error) {
+				useOnDeviceRecognition = false
+				tapeDeckDebugLog("on-device recognition unavailable (\(ns.domain) \(ns.code)); falling back to server-based recognition")
+				buildRequest()
+				return
+			}
+
 			tapeDeckDebugLog("recognition error, rebuilding request: \(error)")
 			buildRequest()																		// recover and keep listening
 			return
