@@ -32,6 +32,12 @@ func tapeDeckDebugLog(_ message: String) {
 	public var finalizedText: String { conversation.finalizedText }
 	public var tentativeText: String { conversation.tentativeText }
 
+	/// How long the live transcript must go unchanged before `pausePhases()` reports `.paused`.
+	public var pauseDuration: TimeInterval = 3.0
+	let pausePhaseRelay = StreamRegistry<SpeechPausePhase>()
+	var pauseTask: Task<Void, Never>?
+	var lastPauseText = ""
+
 	private var backend: (any TranscriptionBackend)?
 	private var subscription: AudioSubscription?
 	private var pumpTask: Task<Void, Never>?
@@ -44,6 +50,7 @@ func tapeDeckDebugLog(_ message: String) {
 
 	public func clear() {
 		conversation = TranscribedConversation()
+		lastPauseText = ""
 	}
 
 	public func start() async throws {
@@ -102,6 +109,7 @@ func tapeDeckDebugLog(_ message: String) {
 		if let last = conversation.utterances.last(where: { !$0.isFinal }) {
 			apply(.finalized(Utterance(text: last.text, confidence: last.confidence, isFinal: true)))
 		}
+		resetPauseDetection()
 	}
 
 	public func transcribe(file: AudioFile, locale: Locale = .current) async throws -> TranscribedConversation {
@@ -131,6 +139,8 @@ func tapeDeckDebugLog(_ message: String) {
 			conversation.append(utterance)
 			utteranceRelay.yield(utterance)
 		}
+
+		if isTranscribing { restartPauseCountdown(for: conversation.text) }
 	}
 
 	private static func makeBackend() -> any TranscriptionBackend {
