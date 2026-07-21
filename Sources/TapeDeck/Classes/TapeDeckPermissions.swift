@@ -43,10 +43,19 @@ import Speech
 		NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { _ in
 			Task { @MainActor in TapeDeckPermissions.instance.refresh() }
 		}
+
+		// Configuration-time sanity check: warn early if the host forgot the usage strings.
+		#if DEBUG
+			warnAboutMissingUsageDescriptions()
+		#endif
 	}
 
 	@discardableResult public func requestMicrophone() async -> Bool {
 		if microphone == .granted { return true }
+
+		#if DEBUG
+			guard Self.hasUsageDescription("NSMicrophoneUsageDescription", requesting: "microphone") else { microphone = .denied; return false }
+		#endif
 
 		#if os(iOS)
 			let granted = await AVAudioApplication.requestRecordPermission()
@@ -60,6 +69,10 @@ import Speech
 
 	@discardableResult public func requestSpeechRecognition() async -> Bool {
 		if speechRecognition == .granted { return true }
+
+		#if DEBUG
+			guard Self.hasUsageDescription("NSSpeechRecognitionUsageDescription", requesting: "speech recognition") else { speechRecognition = .denied; return false }
+		#endif
 
 		let status = await Self.requestSpeechAuthorization()
 		speechRecognition = Status(status)
@@ -95,6 +108,25 @@ import Speech
 
 		speechRecognition = Status(SFSpeechRecognizer.authorizationStatus())
 	}
+
+	#if DEBUG
+		private static var warnedKeys: Set<String> = []
+
+		private func warnAboutMissingUsageDescriptions() {
+			_ = Self.hasUsageDescription("NSMicrophoneUsageDescription", requesting: "microphone")
+			_ = Self.hasUsageDescription("NSSpeechRecognitionUsageDescription", requesting: "speech recognition")
+		}
+
+		/// True if the Info.plist declares `key`. Otherwise shows a one-time alert — requesting
+		/// the permission without it hard-crashes the app, so callers should skip the request.
+		private static func hasUsageDescription(_ key: String, requesting purpose: String) -> Bool {
+			if Bundle.main.object(forInfoDictionaryKey: key) != nil { return true }
+			guard warnedKeys.insert(key).inserted else { return false }
+			let message = "Your app's Info.plist is missing \(key).\n\nAdd it, or requesting \(purpose) access will crash the app."
+			Task { @MainActor in presentTapeDeckSetupAlert(message) }
+			return false
+		}
+	#endif
 }
 
 extension TapeDeckPermissions.Status {
@@ -107,3 +139,22 @@ extension TapeDeckPermissions.Status {
 		}
 	}
 }
+
+#if DEBUG
+@MainActor private func presentTapeDeckSetupAlert(_ message: String) {
+	#if canImport(UIKit)
+		let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+		let window = scenes.first { $0.activationState == .foregroundActive }?.keyWindow ?? scenes.first?.keyWindow
+		guard var top = window?.rootViewController else { return }
+		while let presented = top.presentedViewController { top = presented }
+		let alert = UIAlertController(title: "TapeDeck Setup", message: message, preferredStyle: .alert)
+		alert.addAction(UIAlertAction(title: "OK", style: .default))
+		top.present(alert, animated: true)
+	#elseif canImport(AppKit)
+		let alert = NSAlert()
+		alert.messageText = "TapeDeck Setup"
+		alert.informativeText = message
+		alert.runModal()
+	#endif
+}
+#endif
