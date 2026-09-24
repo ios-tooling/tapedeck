@@ -9,6 +9,10 @@
 //	 disables automatic gain control so meter levels reflect true dynamic range —
 //	 required for level-based detection (e.g. loudness / disturbance monitoring).
 //
+//	 `.alongsideOtherAudio` records while other apps keep playing, over the speaker or
+//	 Bluetooth. It never takes input from a Bluetooth headset: doing so switches the
+//	 headset to its call profile and drops everyone's playback to call quality.
+//
 //  Created by Ben Gottlieb on 6/21/26.
 //
 
@@ -21,11 +25,14 @@ public struct AudioSessionConfiguration: Sendable, Equatable {
 	public var category: Category
 	public var mode: Mode
 	public var defaultToSpeaker: Bool
+	// allow a Bluetooth headset's mic (HFP); when false, input stays on the built-in mic
+	public var allowsBluetoothInput: Bool
 
-	public init(category: Category, mode: Mode = .default, defaultToSpeaker: Bool = true) {
+	public init(category: Category, mode: Mode = .default, defaultToSpeaker: Bool = true, allowsBluetoothInput: Bool = true) {
 		self.category = category
 		self.mode = mode
 		self.defaultToSpeaker = defaultToSpeaker
+		self.allowsBluetoothInput = allowsBluetoothInput
 	}
 
 	// the historical default: playback + record, routed to the speaker
@@ -33,4 +40,7 @@ public struct AudioSessionConfiguration: Sendable, Equatable {
 
 	// AGC disabled for accurate level measurement
 	public static let measurement = AudioSessionConfiguration(category: .record, mode: .measurement, defaultToSpeaker: false)
+
+	// records without silencing other apps; the record-only category always silences them
+	public static let alongsideOtherAudio = AudioSessionConfiguration(category: .playAndRecord, mode: .default, defaultToSpeaker: true, allowsBluetoothInput: false)
 }

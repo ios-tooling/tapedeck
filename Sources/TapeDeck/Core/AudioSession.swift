@@ -22,7 +22,8 @@ import AVFoundation
 
 		// A2DP and defaultToSpeaker are output-only options — valid only with a
 		// playback-capable category. Including them with `.record` returns OSStatus -50.
-		var options: AVAudioSession.CategoryOptions = [.allowBluetoothHFP, .overrideMutedMicrophoneInterruption, .mixWithOthers]
+		var options: AVAudioSession.CategoryOptions = [.overrideMutedMicrophoneInterruption, .mixWithOthers]
+		if configuration.allowsBluetoothInput { options.insert(.allowBluetoothHFP) }
 		if configuration.category == .playAndRecord {
 			options.insert(.allowBluetoothA2DP)
 			if configuration.defaultToSpeaker { options.insert(.defaultToSpeaker) }
