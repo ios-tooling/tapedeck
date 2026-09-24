@@ -4,7 +4,7 @@
 //
 //	 Writes a recording as timed chunks inside a package folder, rotating files
 //	 every `chunkDuration` seconds. With a ringDuration, old chunks are pruned so
-//	 only the trailing window survives. Confined to RecordingSession's actor context.
+//	 only the trailing window survives. Levels go to an append-only sidecar (LevelLog). Confined to RecordingSession's actor context.
 //
 //  Created by Ben Gottlieb on 6/11/26.
 //
@@ -22,6 +22,7 @@ final class SegmentedWriter {
 	private var currentStart: TimeInterval = 0
 	private var chunkIndex = 0
 	private var manifest: RecordingPackage.Manifest
+	private let levels: LevelLog
 	private var completedDuration: TimeInterval = 0
 
 	var duration: TimeInterval { completedDuration + (current?.duration ?? 0) }
@@ -34,6 +35,7 @@ final class SegmentedWriter {
 		inputFormat = input
 		manifest = RecordingPackage.Manifest(startedAt: Date(), format: format, chunks: [], levels: [])
 		try package.save(manifest: manifest)
+		levels = try LevelLog(url: package.levelsURL)
 	}
 
 	func updateInputFormat(_ input: AVAudioFormat) {
@@ -48,12 +50,13 @@ final class SegmentedWriter {
 	}
 
 	func recordLevel(_ level: AudioLevel) {
-		manifest.levels.append(.init(offset: duration, level: level))
+		try? levels.append(.init(offset: duration, level: level))
 	}
 
 	func finish() throws -> RecordingPackage {
 		try closeChunk()
 		try package.save(manifest: manifest)
+		levels.close()
 		return package
 	}
 
@@ -87,6 +90,6 @@ final class SegmentedWriter {
 			try? FileManager.default.removeItem(at: package.url.appendingPathComponent(oldest.filename))
 			manifest.chunks.removeFirst()
 		}
-		manifest.levels.removeAll { $0.offset <= cutoff }
+		try? levels.discard(through: cutoff)
 	}
 }

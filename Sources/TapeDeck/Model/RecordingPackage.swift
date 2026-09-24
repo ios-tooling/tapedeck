@@ -2,8 +2,8 @@
 //  RecordingPackage.swift
 //  TapeDeck
 //
-//	 A segmented recording on disk: a folder of audio chunks plus a manifest.json
-//	 carrying chunk timing, a 1Hz level history, and an optional transcript.
+//	 A segmented recording on disk: a folder of audio chunks, a manifest.json carrying
+//	 chunk timing and an optional transcript, and a levels.jsonl 1Hz level history.
 //
 //  Created by Ben Gottlieb on 6/11/26.
 //
@@ -13,6 +13,7 @@ import Foundation
 public struct RecordingPackage: Sendable, Identifiable, Equatable {
 	public static let fileExtension = "recording"
 	static let manifestFilename = "manifest.json"
+	static let levelsFilename = "levels.jsonl"
 
 	public var id: URL { url }
 	public let url: URL
@@ -22,6 +23,7 @@ public struct RecordingPackage: Sendable, Identifiable, Equatable {
 	}
 
 	public var manifestURL: URL { url.appendingPathComponent(Self.manifestFilename) }
+	public var levelsURL: URL { url.appendingPathComponent(Self.levelsFilename) }
 	public var name: String { url.deletingPathExtension().lastPathComponent }
 	public var exists: Bool { FileManager.default.fileExists(atPath: manifestURL.path) }
 
@@ -32,6 +34,12 @@ public struct RecordingPackage: Sendable, Identifiable, Equatable {
 	func save(manifest: Manifest) throws {
 		try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
 		try JSONEncoder().encode(manifest).write(to: manifestURL)
+	}
+
+	// the 1Hz level history; packages written before levels.jsonl kept it in the manifest
+	public func loadLevels() -> [Manifest.LevelSample] {
+		if FileManager.default.fileExists(atPath: levelsURL.path) { return LevelLog.read(from: levelsURL) }
+		return (try? loadManifest())?.levels ?? []
 	}
 
 	public var chunkFiles: [AudioFile] {
@@ -50,6 +58,7 @@ extension RecordingPackage {
 		public var startedAt: Date
 		public var format: AudioFormat
 		public var chunks: [Chunk]
+		// only populated by packages written before levels.jsonl; read levels via loadLevels()
 		public var levels: [LevelSample]
 		public var transcript: TranscribedConversation?
 

@@ -59,6 +59,7 @@ struct ModelTests {
 
 		#expect(package.exists)
 		#expect(try package.loadManifest() == manifest)
+		#expect(package.loadLevels() == manifest.levels)			// pre-sidecar packages still read their levels
 		#expect(package.duration == 10)
 		#expect(package.chunkFiles.map { $0.url.lastPathComponent } == ["0. 0-5.wav", "1. 5-5.wav"])
 	}

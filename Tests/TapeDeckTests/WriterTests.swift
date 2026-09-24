@@ -90,4 +90,35 @@ struct WriterTests {
 		#expect(FileManager.default.fileExists(atPath: prunedChunkURL!.path) == false)
 		#expect(manifest.chunks.last.map { $0.start + $0.duration } == 5)	// timeline is preserved
 	}
+
+	@Test func levelsAreAppendedToSidecarNotManifest() throws {
+		let packageURL = tempURL(ext: RecordingPackage.fileExtension)
+		defer { try? FileManager.default.removeItem(at: packageURL) }
+
+		let writer = try SegmentedWriter(package: RecordingPackage(url: packageURL), format: .wav, chunkDuration: 1, ringDuration: nil, input: inputFormat)
+		for second in 0..<3 {
+			try writer.write(oneSecondBuffer())
+			writer.recordLevel(AudioLevel(decibels: Double(-40 + second)))
+		}
+		let package = try writer.finish()
+
+		#expect(try package.loadManifest().levels.isEmpty)
+		#expect(package.loadLevels().map(\.offset) == [1, 2, 3])
+		#expect(package.loadLevels().map(\.level.decibels) == [-40, -39, -38])
+	}
+
+	@Test func ringBufferPrunesOldLevels() throws {
+		let packageURL = tempURL(ext: RecordingPackage.fileExtension)
+		defer { try? FileManager.default.removeItem(at: packageURL) }
+
+		let writer = try SegmentedWriter(package: RecordingPackage(url: packageURL), format: .wav, chunkDuration: 1, ringDuration: 2, input: inputFormat)
+		for _ in 0..<5 {
+			try writer.write(oneSecondBuffer())
+			writer.recordLevel(AudioLevel(decibels: -40))
+		}
+		let package = try writer.finish()
+
+		#expect(package.loadLevels().allSatisfy { $0.offset > 2 })
+		#expect(package.loadLevels().last?.offset == 5)
+	}
 }
