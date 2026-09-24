@@ -112,9 +112,10 @@ import Speech
 	#if DEBUG
 		private static var warnedKeys: Set<String> = []
 
+		// speech recognition is optional (apps may only record), so its key is checked when it's
+		// actually requested rather than here
 		private func warnAboutMissingUsageDescriptions() {
 			_ = Self.hasUsageDescription("NSMicrophoneUsageDescription", requesting: "microphone")
-			_ = Self.hasUsageDescription("NSSpeechRecognitionUsageDescription", requesting: "speech recognition")
 		}
 
 		/// True if the Info.plist declares `key`. Otherwise shows a one-time alert — requesting
