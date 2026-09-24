@@ -43,9 +43,9 @@ struct PauseDetectionTests {
 			}
 		}
 
+		// no suspension between restarts, so the first countdown can't fire before it's replaced
 		transcriber.restartPauseCountdown(for: "hello")
 		transcriber.restartPauseCountdown(for: "hello")				// unchanged text should not restart
-		try await Task.sleep(for: .seconds(0.03))
 		transcriber.restartPauseCountdown(for: "hello there")
 		await consumer.value
 
@@ -55,18 +55,15 @@ struct PauseDetectionTests {
 	@Test func cancelPauseTimerSuppressesPaused() async throws {
 		let transcriber = Transcriber()
 		transcriber.pauseDuration = 0.05
-
-		var received: [SpeechPausePhase] = []
-		let stream = transcriber.pausePhases()
-		let consumer = Task {
-			for await phase in stream { received.append(phase) }
-		}
+		var phases = transcriber.pausePhases().makeAsyncIterator()
 
 		transcriber.restartPauseCountdown(for: "hello")
+		let countdown = try #require(transcriber.pauseTask)
 		transcriber.cancelPauseTimer()
-		try await Task.sleep(for: .seconds(0.15))
-		consumer.cancel()
+		await countdown.value										// the cancelled countdown has run to completion
+		transcriber.pausePhaseRelay.finishAll()						// end the stream after whatever it emitted
 
-		#expect(received == [.speakingStopped(0.05)])
+		#expect(await phases.next() == .speakingStopped(0.05))
+		#expect(await phases.next() == nil)
 	}
 }
