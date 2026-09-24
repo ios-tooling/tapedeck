@@ -11,6 +11,7 @@
 //
 
 import AVFoundation
+import Chronicle
 
 @MainActor final class AudioSource {
 	static let instance = AudioSource()
@@ -60,9 +61,9 @@ import AVFoundation
 		isStarted = true
 	}
 
-	private func startEngine() throws {
+	private func startEngine(activatingSession: Bool = true) throws {
 		#if os(iOS)
-			try AudioSession.instance.activate(configuration)
+			if activatingSession { try AudioSession.instance.activate(configuration) }
 		#endif
 
 		let engine = AVAudioEngine()
@@ -82,7 +83,7 @@ import AVFoundation
 		} catch {
 			engine.inputNode.removeTap(onBus: 0)
 			#if os(iOS)
-				AudioSession.instance.deactivate()
+				if activatingSession { AudioSession.instance.deactivate() }
 			#endif
 			throw error
 		}
@@ -92,7 +93,7 @@ import AVFoundation
 		registerForNotifications()
 	}
 
-	private func stop() {
+	private func stop(deactivatingSession: Bool = true) {
 		simulatedTask?.cancel()
 		simulatedTask = nil
 
@@ -103,7 +104,7 @@ import AVFoundation
 			unregisterForNotifications()
 
 			#if os(iOS)
-				AudioSession.instance.deactivate()
+				if deactivatingSession { AudioSession.instance.deactivate() }
 			#endif
 		}
 
@@ -114,8 +115,19 @@ import AVFoundation
 	func restartAfterConfigurationChange() {
 		guard !subscribers.isEmpty, engine != nil else { return }
 
-		stop()
-		try? start()
+		// rebuild only the engine: iOS refuses to reactivate a recording session from the
+		// background, so cycling the session here would end capture on a route change
+		stop(deactivatingSession: false)
+		do {
+			try startEngine(activatingSession: false)
+			isStarted = true
+		} catch {
+			#if os(iOS)
+				AudioSession.instance.deactivate()
+			#endif
+			Chronicle.error(error, context: "restarting audio engine after configuration change")
+			return
+		}
 		if let inputFormat { subscribers.yield(.formatChanged(inputFormat)) }
 	}
 
