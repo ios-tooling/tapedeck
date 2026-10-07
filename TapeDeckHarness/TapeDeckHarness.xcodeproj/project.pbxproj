@@ -379,7 +379,7 @@
 /* Begin XCRemoteSwiftPackageReference section */
 		B55D3B112CBB34DC00787034 /* XCRemoteSwiftPackageReference "filebrowser" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ios-tooling/filebrowser";
+			repositoryURL = "https://github.com/ios-tooling/FileBrowser";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 0.0.5;
